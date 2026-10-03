@@ -35,6 +35,14 @@ flat in_out vec2 midCoordOffset;
 #include "/utils/depth.glsl"
 #include "/utils/projections.glsl"
 
+#if REFLECTIONS_ENABLED == 1
+	// Forward sky-reflections for NON-water translucents (glass/ice/...): each such
+	// fragment reflects on its own at draw time, so glass keeps its reflection even when it isn't
+	// the nearest translucent layer (e.g. glass in front of water).
+	#include "/utils/getSkyColor.glsl"
+	#include "/lib/reflections.glsl"
+#endif
+
 #if WAVING_WATER_SURFACE_ENABLED == 1
 	#include "/lib/simplex_noise.glsl"
 #endif
@@ -42,14 +50,15 @@ flat in_out vec2 midCoordOffset;
 void main() {
 	
 	
-	// fade distant terrain
+	// fade distant terrain (complementary dither with dh_water — exact same band & dither)
 	#ifdef DISTANT_HORIZONS
 		float dither = bayer64(gl_FragCoord.xy);
-		#if TEMPORAL_FILTER_ENABLED > 0
+		#if TEMPORAL_FILTER_ENABLED == 1
 			dither = fract(dither + 1.61803398875 * mod(float(frameCounter), 3600.0));
 		#endif
 		float lengthCylinder = max(length(playerPos.xz), abs(playerPos.y));
-		if (lengthCylinder >= far - 8.0 - 8.0 * dither) discard;
+		// wide 48-block dithered handoff for a soft seam
+		if (lengthCylinder >= far - 24.0 - 24.0 * dither) discard;
 	#elif defined VOXY
 		
 	#elif CYLINDRICAL_CLIPPING == 1
@@ -65,6 +74,8 @@ void main() {
 	#elif PBR_TYPE == 1
 		vec2 pbrData = texture2D(specular, texcoord).rg;
 		float reflectiveness = pbrData.g;
+		// [upstream I-Like-Vanilla v1.4.5] labPBR metal fix: F0 values 230-255 are a metal-type
+		// index, not a reflectance, so using pbrData.g raw made metals near-mirror ("too reflective").
 		if (int(reflectiveness * 255.0 + 0.5) > 229) reflectiveness -= 175.0 / 255.0;
 		reflectiveness *= 0.5;
 		reflectiveness = mix(reflectiveness, mix(WATER_REFLECTION_AMOUNT_UNDERGROUND, WATER_REFLECTION_AMOUNT_SURFACE, lmcoord.y), float(materialId == BLOCK_ID_WATER));
@@ -84,13 +95,12 @@ void main() {
 	vec4 rawColor = texture2D(MAIN_TEXTURE, texcoord);
 	if (rawColor.a < 0.01) discard;
 	vec4 color = rawColor;
-	color.rgb = color.rgb - (4.0 / 27.0) * color.rgb * color.rgb * color.rgb;
 	color *= glcolor;
+	color.rgb = color.rgb - (4.0 / 27.0) * color.rgb * color.rgb * color.rgb;
 	
 	float m = getLum(color.rgb);
 	m = m * m * (3.0 - 2.0 * m);
 	color.rgb *= 1.0 - TEXTURE_CONTRAST * 0.125 + m * TEXTURE_CONTRAST * 0.25;
-	color.rgb = color.rgb * (1.0 + TEXTURE_CONTRAST_2 * 0.025) - TEXTURE_CONTRAST_2 * 0.025;
 	
 	
 	// misc
@@ -110,7 +120,6 @@ void main() {
 	// water
 	if (materialId == BLOCK_ID_WATER) {
 		
-		color.rgb = mix(glcolor.rgb, color.rgb, WATER_TEXTURE_INFLUENCE);
 		color.rgb = mix(vec3(getLum(color.rgb)), color.rgb, WATER_BIOME_INFLUENCE);
 		
 		vec3 viewDir = normalize(viewPos);
@@ -162,7 +171,7 @@ void main() {
 			//opaqueBlockDepth = mix(opaqueBlockDepth, far, getBorderFogAmount(opaquePlayerPos));
 		#endif
 		float waterDepth = opaqueBlockDepth - blockDepth;
-		float waterDepthPercent = exp(waterDepth / -8.0); // note: 0.0 is deep and 1.0 is shallow
+		float waterDepthPercent = exp(waterDepth / -16.0); // note: 0.0 is deep and 1.0 is shallow
 		if (isEyeInWater == 1) {
 			color.a = 1.0 - WATER_TRANSPARENCY_DEEP;
 		} else {
@@ -183,14 +192,13 @@ void main() {
 			#else
 				foamAmount *= 0.7;
 			#endif
-			if (isEyeInWater > 0) foamAmount *= 0.5;
-			color.rgb = mix(color.rgb, vec3(0.75 + 0.25 * dayPercent), foamAmount * WATER_FOAM_AMOUNT * 2.0);
+			color.rgb = mix(color.rgb, vec3(0.75 + 0.25 * dayPercent), foamAmount * WATER_FOAM_AMOUNT * 2.5);
 		#endif
 		
 		// water needs to be more opaque in dark areas
 		float alphaLift = max(lmcoord.x, lmcoord.y * dayPercent);
 		alphaLift = sqrt(alphaLift);
-		alphaLift = (1.0 - alphaLift) * (1.2 - min(screenBrightness, 1.0));
+		alphaLift = (1.0 - alphaLift) * (1.2 - screenBrightness);
 		#if WATER_FOAM_ENABLED == 1
 			alphaLift += foamAmount * WATER_FOAM_AMOUNT;
 		#endif
@@ -218,7 +226,7 @@ void main() {
 			neighborCoord -= distToNext.x < distToNext.y ? ivec2(sign(tangentViewDir.x), 0) : ivec2(0, sign(tangentViewDir.y)); // I'm not entirely sure why it's -= instead of +=, must be coord space shenanigans
 			
 			ivec2 minCoord = ivec2((midTexCoord - midCoordOffset) * atlasSize);
-			ivec2 maxCoord = ivec2((midTexCoord + midCoordOffset) * atlasSize + 0.5);
+			ivec2 maxCoord = ivec2((midTexCoord + midCoordOffset) * atlasSize + 1.0);
 			neighborCoord -= minCoord;
 			neighborCoord %= maxCoord - minCoord;
 			neighborCoord += minCoord;
@@ -234,23 +242,37 @@ void main() {
 	// main lighting
 	float _inSunlightAmount;
 	doFshLighting(color.rgb, _inSunlightAmount, lmcoord.x, lmcoord.y, specularness, 0.0, viewPos, normal, gl_FragCoord.z);
-	
-	
+
+
+	// Non-water translucents (glass, ice, honey...): reflect FORWARD right here with a
+	// sky-only reflection — no geometry march, so no false hits through water/nearby geometry.
+	// Water keeps the classic composite4 reflection path untouched.
+	bool isWaterMaterial = (materialId == BLOCK_ID_WATER);
+	#if REFLECTIONS_ENABLED == 1
+		if (!isWaterMaterial && reflectiveness > 0.01) {
+			addSkyReflection(color.rgb, viewPos, normal, lmcoord, reflectiveness);
+		}
+	#endif
+
+
 	// fog
 	#if BORDER_FOG_ENABLED == 1
 		color.a *= 1.0 - fogAmount;
 	#endif
-	
-	
+
+
 	/* DRAWBUFFERS:03 */
 	#if DO_COLOR_CODED_GBUFFERS == 1
 		color = vec4(0.0, 0.0, 1.0, 1.0);
 	#endif
 	color.rgb *= 0.5;
 	gl_FragData[0] = color;
+	// Non-water translucents (glass/ice/...) write reflectiveness 0: they already got their (sky-only)
+	// reflection forward above, so the composite reflection pass must skip their pixels — running it
+	// there mixed glass position with other surfaces' data and produced smeared false reflections.
 	gl_FragData[1] = vec4(
 		pack_2x8(lmcoord),
-		pack_7_7_1_1(reflectiveness, specularness, 0.0, 0.0),
+		pack_2x8(isWaterMaterial ? reflectiveness : 0.0, 0.0),
 		encodeNormal(normal)
 	);
 	
@@ -270,6 +292,17 @@ void main() {
 #endif
 #if BORDER_FOG_ENABLED == 1
 	#include "/utils/borderFogAmount.glsl"
+#endif
+
+// [CL] Voxelise the NETHER PORTAL here. It's a translucent block, so it renders in THIS pass (not
+// gbuffers_terrain) and is 'shadow casting: never', so neither the terrain nor the shadow voxeliser
+// sees it. This write lands in the gbuffers stage; the floodfill was moved to composite.csh (which
+// runs AFTER this translucent pass) so it now reads this voxel the same frame. Gated to the portal
+// materialId only in main(), so water/glass/ice (which must keep passing light) are NOT voxelised.
+// (updateVoxelIds leaves GET_VOXEL_ID #defined — #undef right after, as gbuffers_terrain does.)
+#if COLORED_LIGHTING_ENABLED == 1
+	#include "/lib/colored_lighting/updateVoxelIds.glsl"
+	#undef GET_VOXEL_ID
 #endif
 
 void main() {
@@ -295,7 +328,15 @@ void main() {
 	#endif
 	#define DO_BRIGHTNESS_TWEAKS
 	#include "/generated/blockDatas.glsl"
-	
+
+	// [CL] voxelise ONLY the nether portal (translucent + shadow-casting:never). playerPos here is still
+	// the un-waved position (water waving runs below). Read by composite.csh (floodfill) later this frame.
+	#if COLORED_LIGHTING_ENABLED == 1
+		if (gl_VertexID % 4 == 0 && materialId == BLOCK_ID_NETHER_PORTAL) {
+			updateVoxelIds(playerPos, materialId);
+		}
+	#endif
+
 	midTexCoord = mat2(gl_TextureMatrix[0]) * mc_midTexCoord;
 	midCoordOffset = abs(texcoord - midTexCoord);
 	
@@ -340,7 +381,7 @@ void main() {
 	#endif
 	
 	
-	doVshLighting(lmcoord, glcolor.rgb, viewPos, normal, gl_Normal);
+	doVshLighting(lmcoord, viewPos, normal);
 	
 }
 

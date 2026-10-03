@@ -7,7 +7,6 @@ vec3 getFogColor(vec3 viewPos, vec3 playerPos) {
 	vec3 fogColorOut;
 	
 	#ifdef OVERWORLD
-		vec3 viewDir = normalize(viewPos);
 		
 		#if CUSTOM_OVERWORLD_SKYBOX == 0
 			const vec3 DAY_COLOR = SKY_DAY_COLOR * 0.75;
@@ -25,14 +24,18 @@ vec3 getFogColor(vec3 viewPos, vec3 playerPos) {
 			const vec3 HORIZON_SUNSET_COLOR = SKY_HORIZON_SUNSET_COLOR * 0.75;
 		#endif
 		
+		float sunriseSunsetPercent = ambientSunrisePercent + ambientSunsetPercent;
+		vec3 viewDir = normalize(viewPos);
+		
+		float skyMixFactor = dayPercent;
 		float upDot = dot(viewDir, gbufferModelView[1].xyz);
-		fogColorOut = mix(NIGHT_COLOR, DAY_COLOR, dayPercent);
+		fogColorOut = mix(NIGHT_COLOR, DAY_COLOR, skyMixFactor);
 		fogColorOut = mix(fogColorOut, vec3(0.05 + dayPercent * 0.4), inPaleGarden);
 		upDot = max(upDot, 0.0);
-		vec3 horizonColor = mix(HORIZON_NIGHT_COLOR, HORIZON_DAY_COLOR, dayPercent);
+		vec3 horizonColor = mix(HORIZON_NIGHT_COLOR, HORIZON_DAY_COLOR, skyMixFactor);
 		#if CUSTOM_OVERWORLD_SKYBOX == 1
-			horizonColor *= 1.0 - 0.4 * skySunriseSunsetPercent;
-			fogColorOut *= 1.0 - 0.4 * skySunriseSunsetPercent;
+			horizonColor *= 1.0 - 0.4 * sunriseSunsetPercent;
+			fogColorOut *= 1.0 - 0.4 * sunriseSunsetPercent;
 		#endif
 		horizonColor = mix(horizonColor, vec3(0.1 + 0.25 * dayPercent), inPaleGarden);
 		float horizonAmount = 1.0 - upDot;
@@ -67,19 +70,22 @@ vec3 getFogColor(vec3 viewPos, vec3 playerPos) {
 		#endif
 		float upDotForSS = 1.0 - (1.0 - upDot) * (1.0 - upDot);
 		sunDot *= percentThrough(upDotForSS * (1.0 - SUNRISE_SUNSET_TOP_HEIGHT * 0.5), 1.0, SUNRISE_SUNSET_BOTTOM_HEIGHT);
-		sunDot *= skySunriseSunsetPercent;
+		sunDot *= sunriseSunsetPercent;
 		sunDot *= 1.0 - 0.5 * inPaleGarden;
 		fogColorOut = mix(fogColorOut, sunAngle > 0.25 && sunAngle < 0.75 ? HORIZON_SUNSET_COLOR : HORIZON_SUNRISE_COLOR, sunDot);
-		
-		float rainAmount = rainStrength * SKY_WEATHER_DESATURATION;
-		rainAmount *= 1.0 - (1.0 - dayPercent) * (1.0 - dayPercent);
-		fogColorOut = mix(fogColorOut, vec3(0.8, 0.9, 1.0) * SKY_WEATHER_BRIGHTNESS * dayPercent, rainAmount);
 		
 		fogColorOut *= 2.0/3.0;
 		fogColorOut = min(fogColorOut, 1.0);
 		fogColorOut = 1.0 - (fogColorOut - 1.0) * (fogColorOut - 1.0);
 		fogColorOut *= 3.0/2.0 * 1.2;
 		fogColorOut *= 0.3 + 0.7 * dayPercent;
+
+		// rain/overcast mix AFTER the brightening curve — keeps the wet fog grey instead of white,
+		// so it matches the sky and the Distant Horizons border doesn't show as a white band in rain.
+		// (kept identical to the rain mix in /utils/getSkyColor.glsl)
+		float rainAmount = rainStrength * SKY_WEATHER_DESATURATION;
+		rainAmount *= 1.0 - (1.0 - dayPercent) * (1.0 - dayPercent);
+		fogColorOut = mix(fogColorOut, vec3(0.8, 0.9, 1.0) * SKY_WEATHER_BRIGHTNESS * dayPercent, rainAmount);
 		
 		#if UNDERGROUND_FOG_COLOR_TYPE == 1
 			#define FOG_COLOR fogColor
@@ -94,7 +100,7 @@ vec3 getFogColor(vec3 viewPos, vec3 playerPos) {
 		
 	#elif defined NETHER
 		
-		// important: must stay the same as in /utils/getSkyColor.glsl
+		// must stay the same as in /utils/getSkyColor.glsl
 		fogColorOut = fogColor;
 		fogColorOut = mix(vec3(getLum(fogColorOut)), fogColorOut, NETHER_SKY_FOG_SATURATION);
 		fogColorOut = NETHER_SKY_BASE_COLOR + NETHER_SKY_FOG_INFLUENCE * fogColorOut;
@@ -106,12 +112,8 @@ vec3 getFogColor(vec3 viewPos, vec3 playerPos) {
 		
 	#endif
 	
-	// important: must stay the same as in /utils/getSkyColor.glsl
 	if (isEyeInWater == 1) {
-		fogColorOut = fogColor;
-		fogColorOut = mix(vec3(getLum(fogColorOut)), fogColorOut, WATER_VANILLA_FOG_SATURATION);
-		fogColorOut = WATER_FOG_BASE_COLOR + WATER_VANILLA_FOG_INFLUENCE * fogColorOut;
-		fogColorOut *= WATER_FOG_TINT_COLOR;
+		fogColorOut = WATER_FOG_COLOR * (0.2 + 0.8 * max(dayPercent, eyeBrightnessSmooth.x / 240.0));
 	} else if (isEyeInWater == 2) {
 		fogColorOut = LAVA_FOG_COLOR * (0.2 + 0.8 * max(dayPercent, eyeBrightnessSmooth.x / 240.0));
 	} else if (isEyeInWater == 3) {

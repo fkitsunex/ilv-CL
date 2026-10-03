@@ -14,10 +14,10 @@ in_out vec2 texcoord;
 #if SSS_PHOSPHOR == 1
 	#include "/lib/super_secret_settings/phosphor.glsl"
 #endif
-#if FXAA_ENABLED > 0
+#if FXAA_ENABLED == 1
 	#include "/lib/fxaa.glsl"
 #endif
-#if TEMPORAL_FILTER_ENABLED > 0
+#if TEMPORAL_FILTER_ENABLED == 1
 	#include "/utils/depth.glsl"
 	#include "/lib/temporal_filter.glsl"
 #endif
@@ -55,51 +55,31 @@ void main() {
 		if (dot(viewPosDh, viewPosDh) < dot(viewPos, viewPos)) viewPos = viewPosDh;
 		vec4 sampleScreenPos = gbufferProjection * vec4(viewPos, 1.0);
 		depth = sampleScreenPos.z / sampleScreenPos.w * 0.5 + 0.5;
+	#else
+		float depthDh = 1.0;
 	#endif
 	
 	vec3 pos = vec3(texcoord, depth);
-	vec3 cameraOffset = cameraPosition - previousCameraPosition;
-	vec2 prevCoord = reproject(pos, cameraOffset);
-	
-	
-	
-	#if FXAA_ENABLED == 2 || TEMPORAL_FILTER_ENABLED == 2
-		float refSpecGlowingEntity = texelFetch(OPAQUE_DATA_TEXTURE, texelcoord, 0).y;
-		bool isEntity = unpack_7_7_1_1(refSpecGlowingEntity).w > 0.5;
+	vec2 prevCoord = texcoord;
+	bool doReprojection = !depthIsHand(depth);
+	#if SSS_LIDAR == 1
+		doReprojection = true;
 	#endif
+	if (doReprojection) {
+		vec3 cameraOffset = cameraPosition - previousCameraPosition;
+		prevCoord = reproject(pos, cameraOffset);
+	}
+	
+	
 	
 	// ======== FXAA ======== //
 	#if FXAA_ENABLED == 1
 		doFxaa(color, MAIN_TEXTURE);
-	#elif FXAA_ENABLED == 2
-		if (isEntity) doFxaa(color, MAIN_TEXTURE);
 	#endif
 	
 	// ======== TEMPORAL FILTER ======== //
-	#if TEMPORAL_FILTER_ENABLED >= 1
-		bool doTF = true;
-		#if TEMPORAL_EXTRA_DEPTH_CHECK >= 1
-			bool depthCheck = depth == 1.0;
-			float prevDepth1 = texture2D(PREV_DEPTH_TEXTURE, prevCoord + vec2(0.0, pixelSize.y)).r;
-			depthCheck = depthCheck || (depth - prevDepth1) / depth < 0.001;
-			#if TEMPORAL_EXTRA_DEPTH_CHECK == 2
-				float prevDepth2 = texture2D(PREV_DEPTH_TEXTURE, prevCoord - vec2(0.0, pixelSize.y)).r;
-				depthCheck = depthCheck || (depth - prevDepth2) / depth < 0.001;
-				float prevDepth3 = texture2D(PREV_DEPTH_TEXTURE, prevCoord + vec2(pixelSize.x, 0.0)).r;
-				depthCheck = depthCheck || (depth - prevDepth3) / depth < 0.001;
-				float prevDepth4 = texture2D(PREV_DEPTH_TEXTURE, prevCoord - vec2(pixelSize.x, 0.0)).r;
-				depthCheck = depthCheck || (depth - prevDepth4) / depth < 0.001;
-			#endif
-			doTF = doTF && depthCheck;
-		#endif
-		#if TEMPORAL_FILTER_ENABLED == 2
-			if (doTF) {
-				refSpecGlowingEntity = texelFetch(OPAQUE_DATA_TEXTURE, ivec2(prevCoord * viewSize), 0).y;
-				isEntity = isEntity || unpack_7_7_1_1(refSpecGlowingEntity).w > 0.5;
-				doTF = doTF && !isEntity;
-			}
-		#endif
-		if (doTF) doTemporalFilter(color, depth, prevCoord);
+	#if TEMPORAL_FILTER_ENABLED == 1
+		doTemporalFilter(color, depth, depthDh, prevCoord);
 	#endif
 	
 	
@@ -128,7 +108,7 @@ void main() {
 	
 	#if MOTION_BLUR_ENABLED == 1
 		vec3 prevColor = color;
-		if (length(texcoord - prevCoord) > 0.00001 && !depthIsHand(depth)) {
+		if (length(texcoord - prevCoord) > 0.00001) {
 			doMotionBlur(color, prevCoord);
 		}
 	#endif
@@ -138,7 +118,7 @@ void main() {
 	/* DRAWBUFFERS:0 */
 	color *= 0.5;
 	gl_FragData[0] = vec4(color, 1.0);
-	#if TEMPORAL_FILTER_ENABLED > 0 || MOTION_BLUR_ENABLED == 1 || SSS_PHOSPHOR == 1 || SSS_LIDAR == 1
+	#if TEMPORAL_FILTER_ENABLED == 1 || MOTION_BLUR_ENABLED == 1 || SSS_PHOSPHOR == 1 || SSS_LIDAR == 1
 		/* DRAWBUFFERS:01 */
 		#if MOTION_BLUR_ENABLED == 1
 			prevColor *= 0.5;

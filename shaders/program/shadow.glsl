@@ -23,32 +23,22 @@ void main() {
 	#endif
 	
 	#if COLORED_SHADOWS_ENABLED == 1 && WATER_CAUSTICS_ENABLED == 1
-		#if WATER_CAUSTICS_TYPE == 1
-			ivec3 colorInt = ivec3(color * 255.0 + 0.5);
-			if (colorInt.r == 1 && (colorInt.g == 2 || colorInt.g == 3) && colorInt.b == 255) color.rgb -= 0.01;
-			if (materialId == BLOCK_ID_WATER) {
-				vec3 averageColor = texture2DLod(texture, texcoord, 4).rgb * glcolor * 1.05;
-				bool isBright = getLum(color.rgb) > getLum(averageColor);
-				color.rgb = mix(ivec3(1, 2, 255) / 255.0, ivec3(1, 3, 255) / 255.0, float(isBright));
-			}
-		#elif WATER_CAUSTICS_TYPE == 2
-			ivec3 colorInt = ivec3(color * 255.0 + 0.5);
-			if (colorInt.r == 1 && (colorInt.g == 2 || colorInt.g == 3) && colorInt.b == 255) color.rgb -= 0.01;
-			if (materialId == BLOCK_ID_WATER) {
-				vec3 worldPos = playerPos + cameraPosition;
-				worldPos *= 2.0 / WATER_CAUSTICS_SIZE;
-				worldPos.x /= WATER_CAUSTICS_HORIZONTAL_STRETCH * 1.5;
-				worldPos.y += (worldPos.x + worldPos.z);
-				worldPos.y += frameTimeCounter * WATER_CAUSTICS_SPEED;
-				float noise_1 = valueNoise(worldPos);
-				worldPos.y -= frameTimeCounter * 2.0 * WATER_CAUSTICS_SPEED;
-				float noise_2 = valueNoise(worldPos);
-				const float minValue = 0.497 - 0.03 * WATER_CAUSTICS_THICKNESS;
-				const float maxValue = 0.503 + 0.03 * WATER_CAUSTICS_THICKNESS;
-				bool isBright = (noise_1 > minValue && noise_1 < maxValue) || (noise_2 > minValue && noise_2 < maxValue);
-				color.rgb = mix(ivec3(1, 2, 255) / 255.0, ivec3(1, 3, 255) / 255.0, float(isBright));
-			}
-		#endif
+		ivec3 colorInt = ivec3(color * 255.0 + 0.5);
+		if (colorInt.r == 1 && (colorInt.g == 2 || colorInt.g == 3) && colorInt.b == 255) color.rgb -= 0.01;
+		if (materialId == BLOCK_ID_WATER) {
+			vec3 worldPos = playerPos + cameraPosition;
+			worldPos *= 2.0 / WATER_CAUSTICS_SIZE;
+			worldPos.x /= WATER_CAUSTICS_HORIZONTAL_STRETCH * 1.5;
+			worldPos.y += (worldPos.x + worldPos.z);
+			worldPos.y += frameTimeCounter * WATER_CAUSTICS_SPEED;
+			float noise_1 = valueNoise(worldPos);
+			worldPos.y -= frameTimeCounter * 2.0 * WATER_CAUSTICS_SPEED;
+			float noise_2 = valueNoise(worldPos);
+			const float minValue = 0.497 - 0.03 * WATER_CAUSTICS_THICKNESS;
+			const float maxValue = 0.503 + 0.03 * WATER_CAUSTICS_THICKNESS;
+			bool isBright = (noise_1 > minValue && noise_1 < maxValue) || (noise_2 > minValue && noise_2 < maxValue);
+			color.rgb = mix(ivec3(1, 2, 255) / 255.0, ivec3(1, 3, 255) / 255.0, float(isBright));
+		}
 	#endif
 	
 	gl_FragData[0] = color;
@@ -61,6 +51,8 @@ void main() {
 #ifdef VSH
 
 #if COLORED_LIGHTING_ENABLED == 1
+	// (no CL_COPYCAT here: the shadow pass's lightmap matrix isn't guaranteed, and gbuffers_terrain already
+	// runs the copycat light detection in every dimension)
 	#include "/lib/colored_lighting/updateVoxelIds.glsl"
 #endif
 #if WAVING_ENABLED == 1
@@ -85,7 +77,7 @@ void main() {
 		vec3 playerPos;
 	#endif
 	playerPos = (shadowModelViewInverse * shadowProjectionInverse * ftransform()).xyz;
-	
+
 	uint encodedData = uint(mc_Entity.x + 0.5);
 	encodedData *= uint((encodedData & (1u << 14u)) > 0u && encodedData != 65535u);
 	#if !(COLORED_SHADOWS_ENABLED == 1 && WATER_CAUSTICS_ENABLED == 1)
@@ -95,10 +87,9 @@ void main() {
 	materialId &= (1u << 10u) - 1u;
 	
 	#if COLORED_LIGHTING_ENABLED == 1
-		if (gl_VertexID % 4 == 0) {
-			updateVoxelIds(playerPos, materialId);
-		}
+		updateVoxelIds(playerPos, materialId); // every vertex: partial-block votes (ids are written once per quad inside)
 	#endif
+
 	
 	#if EXCLUDE_FOLIAGE == 1
 		bool excludeFromShadows = (encodedData & (3u << 12u)) >= (1u << 12u); // test if 'shadow casting' value is 1 or 3
@@ -137,16 +128,13 @@ void main() {
 		#endif
 	}
 	
-	gl_Position = shadowProjection * shadowModelView * vec4(playerPos, 1.0);
+	#if WAVING_ENABLED == 1 || PHYSICALLY_WAVING_WATER_ENABLED == 1
+		gl_Position = shadowProjection * shadowModelView * vec4(playerPos, 1.0);
+	#else
+		gl_Position = ftransform();
+	#endif
 	
 	gl_Position.xyz = distort(gl_Position.xyz);
-	
-	// idk why but there was a situation where something with this block type (sand and sand-likes) was rendering its shadow incorrectly and was instead just two weird almost unmoving lines in the shadowmap
-	//const float low  = 16409;
-	//const float high = 16409;
-	//if (mc_Entity.x >= low && mc_Entity.x <= high) {
-	//	gl_Position = vec4(0.0);
-	//}
 	
 }
 

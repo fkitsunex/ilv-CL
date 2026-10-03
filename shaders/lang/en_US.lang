@@ -5,6 +5,7 @@ profile.MEDIUM=§bMedium
 profile.HIGH=§eHigh
 profile.ULTRA=§6Ultra
 profile.UNPLAYABLE=§cUnplayable
+profile.ColoredLight_lite=§aColoredLight-lite
 
 option.STYLE=Style
 option.STYLE.comment=Changes the default values for settings that are set to 'Use STyle' (this does nothing on OptiFine versions)\n\nIf you want to see the default setting values for each style, you can download the corresponding OptiFine (style-specific) version.
@@ -65,16 +66,6 @@ value.FANCY_END_PORTAL_ENABLED.3=Fancy
 option.ENCHANTMENT_GLINT_STRENGTH=Enchantment Glint Strength
 value.ENCHANTMENT_GLINT_STRENGTH.-1=Use Style
 
-option.LEAVES_SIDE_SHADING=Leaves Side Shading
-option.LEAVES_SIDE_SHADING.comment=Alters leaves shading to be more similar to how foliage like grass is rendered
-suffix.LEAVES_SIDE_SHADING=%
-value.LEAVES_SIDE_SHADING.-1=Use Style
-
-option.LEAVES_AO_AMOUNT=Leaves AO Amount
-option.LEAVES_AO_AMOUNT.comment=Alters how much the inner corners between leave blocks are shaded
-suffix.LEAVES_AO_AMOUNT=%
-value.LEAVES_AO_AMOUNT.-1=Use Style
-
 
 
 
@@ -126,6 +117,9 @@ option.GLOWING_COAL_ORE_STRENGTH=Glowing Coal Ore Strength
 option.GLOWING_IRON_ORE_STRENGTH=Glowing Iron Ore Strength
 
 option.GLOWING_COPPER_ORE_STRENGTH=Glowing Copper Ore Strength
+option.GLOWING_ZINC_ORE_STRENGTH=Glowing Zinc Ore Strength
+option.GLOWING_SALT_ORE_STRENGTH=Glowing Salt Ore Strength
+option.GLOWING_SALT_ORE_STRENGTH.comment=Glow strength of Expanded Delight salt ore (uses a baked mask like zinc).
 
 option.GLOWING_GOLD_ORE_STRENGTH=Glowing Gold Ore Strength
 
@@ -283,20 +277,14 @@ option.WATER_CAUSTICS_ENABLED.comment=Adds waves to underwater light (requires C
 value.WATER_CAUSTICS_ENABLED.0=Off
 value.WATER_CAUSTICS_ENABLED.1=On
 
-option.WATER_CAUSTICS_TYPE=Water Caustics Type
-option.WATER_CAUSTICS_TYPE.comment=Controls the shape of water caustics, being either procedurally generated or dependant on the water texture
-value.WATER_CAUSTICS_TYPE.-1=Use Style
-value.WATER_CAUSTICS_TYPE.1=Texture-Based
-value.WATER_CAUSTICS_TYPE.2=Procedural
+option.WATER_CAUSTICS_SIZE=Water Caustics Size
+value.WATER_CAUSTICS_SIZE.-1=Use Style
 
 option.WATER_CAUSTICS_HORIZONTAL_STRETCH=Water Caustics Horizontal Stretch
 value.WATER_CAUSTICS_HORIZONTAL_STRETCH.-1=Use Style
 
 option.WATER_CAUSTICS_SPEED=Water Caustics Speed
 value.WATER_CAUSTICS_SPEED.-1=Use Style
-
-option.WATER_CAUSTICS_SIZE=Water Caustics Size
-value.WATER_CAUSTICS_SIZE.-1=Use Style
 
 option.WATER_CAUSTICS_THICKNESS=Water Caustics Thickness
 value.WATER_CAUSTICS_THICKNESS.-1=Use Style
@@ -377,9 +365,6 @@ option.BRIGHTNESS_TWEAKS_STRENGTH=Brightness Tweaks Strength
 option.BRIGHTNESS_TWEAKS_STRENGTH.comment=Some blocks have specific brightness multipliers applied, this controls the strength of those multipliers
 value.BRIGHTNESS_TWEAKS_STRENGTH.-1=Use Style
 
-option.PARTICLES_BRIGHTNESS=Particles Brightness
-value.PARTICLES_BRIGHTNESS.-1=Use Style
-
 
 
 
@@ -416,6 +401,9 @@ value.AMBIENT_CEL_AMOUNT.90=0.9
 value.AMBIENT_CEL_AMOUNT.95=0.95
 value.AMBIENT_CEL_AMOUNT.100=1.0
 
+option.EMISSIVE_BRIGHTNESS=Light Source Brightness
+option.EMISSIVE_BRIGHTNESS.comment=Brightness of the glowing parts of light-emitting blocks (torch flames, lava, glowstone, glowing ores). 1.0 = default. Separate from 'Block Brightness', which controls how brightly blocklight lits up nearby surfaces.
+
 option.BLOCKLIGHT_CEL_AMOUNT=Blocklight Amount
 option.BLOCKLIGHT_CEL_AMOUNT.comment=How much to apply the cel shading affect to block lighting
 value.BLOCKLIGHT_CEL_AMOUNT.-1=Use Style
@@ -445,13 +433,91 @@ value.BLOCKLIGHT_CEL_AMOUNT.100=1.0
 
 
 
-screen.COLORED_LIGHTING_MENU=Colored Blocklight
+screen.COLORED_LIGHTING_MENU=Colored Light
 
 option.COLORED_LIGHTING_ENABLED=Colored Lighting
-option.COLORED_LIGHTING_ENABLED.comment=Enables floodfill colored block lights
+option.COLORED_LIGHTING_ENABLED.comment=Enables floodfill colored block lights, where coloured light sources (torches, lamps, glowstone, etc) tint the surfaces around them
+
+option.COLORED_LIGHTING_STRENGTH=Colored Light Strength
+option.COLORED_LIGHTING_STRENGTH.comment=How strongly coloured light sources tint nearby blocklight. 0 = off (no colour), 1 = default, higher = more saturated
+
+option.COLORED_LIGHTING_SATURATION=Colored Light Saturation
+option.COLORED_LIGHTING_SATURATION.comment=How saturated the coloured light is. 0 = neutral (no colour), 1 = default, higher = more vivid. Separate from Strength (which is the overall intensity of the tint)
+
+option.COLORED_LIGHTING_REACH=Colored Light Reach
+option.COLORED_LIGHTING_REACH.comment=How far the coloured light spreads from each source before fading to neutral. Higher = the colour fills more of the lit area (matches vanilla blocklight better). Free — does not affect VRAM, unlike Distance
 
 option.COLORED_LIGHTING_DIST=Colored Lighting Distance
-option.COLORED_LIGHTING_DIST.comment=How far the colored lighting extends
+option.COLORED_LIGHTING_DIST.comment=The size of the voxel volume around you that colour can exist in (larger = more VRAM). Reach is limited by this
+
+option.COLORED_LIGHTING_DEBUG=Colored Lighting Debug
+option.COLORED_LIGHTING_DEBUG.comment=Diagnostic view (amplified, bypasses normal lighting). 1 = floodfill buffer contents (colour + spread). 2 = raw block emission straight from the data, looking at a block, skipping the buffer (isolates data vs buffer bugs). 3 = dynamic-light split (green = coloured, red = treated as dynamic light). 4 = light levels: red = the block's vanilla light, green = level of the coloured sources (yellow = they match; magenta = broken data)
+value.COLORED_LIGHTING_DEBUG.0=Off
+value.COLORED_LIGHTING_DEBUG.1=Floodfill buffer
+value.COLORED_LIGHTING_DEBUG.2=Raw emission
+value.COLORED_LIGHTING_DEBUG.3=Dynamic-light split
+value.COLORED_LIGHTING_DEBUG.4=Light levels
+option.CL_DYN_SPLIT=Dynamic Lights Keep Their Colour
+option.CL_DYN_SPLIT.comment=Light from dynamic-light mods (burning mobs, dropped torches...) that's brighter than the coloured sources around it keeps its default warm colour instead of being re-coloured (amplifying the coloured light). Your own held items are excluded. Debug view 3 shows it: green = coloured, red = treated as dynamic light.
+value.CL_DYN_SPLIT.0=Off
+value.CL_DYN_SPLIT.1=On
+
+option.CL_FOG_GLOW_STRENGTH=Colored Fog Glow
+option.CL_FOG_GLOW_STRENGTH.comment=Scatters colored block-light into the atmospheric fog, so light sources glow with their colour through the fog. 0 = off. Only within the colored-lighting range.
+option.CL_FOG_GLOW_SATURATION=Colored Fog Saturation
+option.CL_FOG_GLOW_SATURATION.comment=How saturated the fog colour is. 1 = raw floodfill colour; higher pushes it toward the pure source hue (further from white).
+option.CL_FOG_GLOW_REACH=Colored Fog Reach
+option.CL_FOG_GLOW_REACH.comment=How far from a source the fog glow reaches. Higher makes even dim/distant colored light tint the fog; lower keeps it tight to bright sources.
+option.CL_FOG_GLOW_SAMPLES=Colored Fog Glow Quality
+option.CL_FOG_GLOW_SAMPLES.comment=Raymarch samples for the colored fog glow. Higher = smoother, costs more.
+
+screen.CL_SOURCE_COLORS_MENU=Light Source Colors
+option.CL_SOUL_HUE=Soul (torch/lantern/fire) - Hue
+option.CL_SOUL_SAT=Soul (torch/lantern/fire) - Saturation
+option.CL_REDSTONE_HUE=Redstone (torch/ore) - Hue
+option.CL_REDSTONE_SAT=Redstone (torch/ore) - Saturation
+option.CL_TORCH_HUE=Torch - Hue
+option.CL_TORCH_SAT=Torch - Saturation
+option.CL_LANTERN_HUE=Lantern / Lamp / Jack o Lantern - Hue
+option.CL_LANTERN_SAT=Lantern / Lamp / Jack o Lantern - Saturation
+option.CL_CAMPFIRE_HUE=Campfire / Fire - Hue
+option.CL_CAMPFIRE_SAT=Campfire / Fire - Saturation
+option.CL_LAVA_HUE=Lava - Hue
+option.CL_LAVA_SAT=Lava - Saturation
+option.CL_LAVACAULDRON_HUE=Lava Cauldron - Hue
+option.CL_LAVACAULDRON_SAT=Lava Cauldron - Saturation
+option.CL_SEALANTERN_HUE=Sea Lantern - Hue
+option.CL_SEALANTERN_SAT=Sea Lantern - Saturation
+option.CL_BEACON_HUE=Beacon - Hue
+option.CL_BEACON_SAT=Beacon - Saturation
+option.CL_LICHEN_HUE=Glow Lichen / Sea Pickle - Hue
+option.CL_LICHEN_SAT=Glow Lichen / Sea Pickle - Saturation
+option.CL_CAVEVINE_HUE=Glow Berries - Hue
+option.CL_CAVEVINE_SAT=Glow Berries - Saturation
+option.CL_AMETHYST_HUE=Amethyst - Hue
+option.CL_AMETHYST_SAT=Amethyst - Saturation
+option.CL_OCHRE_HUE=Ochre Froglight - Hue
+option.CL_OCHRE_SAT=Ochre Froglight - Saturation
+option.CL_VERDANT_HUE=Verdant Froglight - Hue
+option.CL_VERDANT_SAT=Verdant Froglight - Saturation
+option.CL_PEARLESCENT_HUE=Pearlescent Froglight - Hue
+option.CL_PEARLESCENT_SAT=Pearlescent Froglight - Saturation
+option.CL_CONDUIT_HUE=Conduit - Hue
+option.CL_CONDUIT_SAT=Conduit - Saturation
+option.CL_GLOWSTONE_HUE=Glowstone - Hue
+option.CL_GLOWSTONE_SAT=Glowstone - Saturation
+option.CL_SHROOMLIGHT_HUE=Shroomlight - Hue
+option.CL_SHROOMLIGHT_SAT=Shroomlight - Saturation
+option.CL_MAGMA_HUE=Magma Block - Hue
+option.CL_MAGMA_SAT=Magma Block - Saturation
+option.CL_CRYING_HUE=Crying Obsidian - Hue
+option.CL_CRYING_SAT=Crying Obsidian - Saturation
+option.CL_ENDROD_HUE=End Rod - Hue
+option.CL_ENDROD_SAT=End Rod - Saturation
+option.CL_PORTAL_HUE=Nether Portal - Hue
+option.CL_PORTAL_SAT=Nether Portal - Saturation
+option.CL_SCULK_HUE=Sculk - Hue
+option.CL_SCULK_SAT=Sculk - Saturation
 
 
 
@@ -776,10 +842,6 @@ option.TEXTURE_CONTRAST=Texture Contrast
 option.TEXTURE_CONTRAST.comment=Directly alters the contrast of textures (and is offset with saturation)
 value.TEXTURE_CONTRAST.-1=Use Style
 
-option.TEXTURE_CONTRAST_2=Texture Contrast 2
-option.TEXTURE_CONTRAST_2.comment=Alternative to Texture Contrast
-value.TEXTURE_CONTRAST_2.-1=Use Style
-
 option.FOLIAGE_SATURATION=Foliage Saturation
 option.FOLIAGE_SATURATION.comment=Affects the saturation of all dynamically colored blocks (which is mostly foliage)
 value.FOLIAGE_SATURATION.-1=Use Style
@@ -832,7 +894,6 @@ option.TEMPORAL_FILTER_ENABLED=Temporal Filter
 option.TEMPORAL_FILTER_ENABLED.comment=Blends frames together to reduce flickering
 value.TEMPORAL_FILTER_ENABLED.0=Off
 value.TEMPORAL_FILTER_ENABLED.1=On
-value.TEMPORAL_FILTER_ENABLED.2=On (Except Entities)
 
 option.TAA_ENABLED=TAA
 option.TAA_ENABLED.comment=Enabled Temporal Anti-Aliasing (makes jagged edges smooth), requires Temporal Filter to be enabled\n\nNote: You can configure this using the Temporal Filter Settings menu, and this is disabled if Temporal Filtering is disabled
@@ -847,7 +908,12 @@ option.FXAA_ENABLED=FXAA
 option.FXAA_ENABLED.comment=A simple form of anti-aliasing (makes jagged edges smooth)
 value.FXAA_ENABLED.0=Off
 value.FXAA_ENABLED.1=On
-value.FXAA_ENABLED.2=On (Only Entities)
+
+option.OUTLINES_ENABLED=Outlines
+option.OUTLINES_ENABLED.comment=Adds black outlines over everything
+value.OUTLINES_ENABLED.-1=Use Style
+value.OUTLINES_ENABLED.0=Off
+value.OUTLINES_ENABLED.1=On
 
 
 
@@ -866,60 +932,6 @@ prefix.TEMPORAL_FILTER_MOVING=x
 option.TEMPORAL_FILTER_DEPTH=Blending Depth Amount
 option.TEMPORAL_FILTER_DEPTH.comment=Increases the blending amount for distant objects
 prefix.TEMPORAL_FILTER_DEPTH=x
-
-option.TEMPORAL_EXTRA_DEPTH_CHECK=Extra Depth Check
-option.TEMPORAL_EXTRA_DEPTH_CHECK.comment=Helps prevent ghosting (for objects that were hidden but become visible) by adding extra additional checks, may slightly impact performance
-value.TEMPORAL_EXTRA_DEPTH_CHECK.0=Off
-value.TEMPORAL_EXTRA_DEPTH_CHECK.1=Partial
-value.TEMPORAL_EXTRA_DEPTH_CHECK.2=Full
-
-
-
-
-
-screen.OUTLINES_MENU=Outlines
-
-option.OUTLINES_ENABLED=Line Outlines
-option.OUTLINES_ENABLED.comment=Adds simple outlines to everything
-value.OUTLINES_ENABLED.-1=Use Style
-value.OUTLINES_ENABLED.0=Off
-value.OUTLINES_ENABLED.1=On
-
-option.OUTLINES_SIZE=Line Outlines Size
-value.OUTLINES_SIZE.-1=Use Style
-
-option.OUTLINES_RED=Line Outlines Red
-value.OUTLINES_RED.-1=Use Style
-
-option.OUTLINES_GREEN=Line Outlines Green
-value.OUTLINES_GREEN.-1=Use Style
-
-option.OUTLINES_BLUE=Line Outlines Blue
-value.OUTLINES_BLUE.-1=Use Style
-
-option.EDGE_HIGHLIGHT_ENABLED=Edge Highlights
-option.EDGE_HIGHLIGHT_ENABLED.comment=Enabled MC-Dungeons-like block highlights
-value.EDGE_HIGHLIGHT_ENABLED.-1=Use Style
-value.EDGE_HIGHLIGHT_ENABLED.0=Off
-value.EDGE_HIGHLIGHT_ENABLED.1=On
-
-option.EDGE_HIGHLIGHT_SIZE=Edge Highlights Size
-option.EDGE_HIGHLIGHT_SIZE.comment=Controls the size of edge highlights by 'defining the count of pixels per block', where the highlight is the size of one pixel
-prefix.EDGE_HIGHLIGHT_SIZE=1 / 
-
-option.EDGE_HIGHLIGHT_BRIGHTNESS_MULT=Edge Highlight Brightness Mult
-option.EDGE_HIGHLIGHT_BRIGHTNESS_MULT.comment=How much the edge highlight effect should brighten the pixel by multiplying (0.0 means no extra brightness, 0.5 means 1.5x brightness, etc)
-value.EDGE_HIGHLIGHT_BRIGHTNESS_MULT.-1=Use Style
-
-option.EDGE_HIGHLIGHT_BRIGHTNESS_LIFT=Edge Highlight Brightness Lift
-option.EDGE_HIGHLIGHT_BRIGHTNESS_LIFT.comment=How much the edge highlight effect should brighten the pixel by adding
-value.EDGE_HIGHLIGHT_BRIGHTNESS_LIFT.-1=Use Style
-
-option.EDGE_HIGHLIGHT_ON_ENTITIES=Edge Highlight On Entities
-option.EDGE_HIGHLIGHT_ON_ENTITIES.comment=Controls whether the edge highlight is added to entities (and other moving objects)
-value.EDGE_HIGHLIGHT_ON_ENTITIES.-1=Use Style
-value.EDGE_HIGHLIGHT_ON_ENTITIES.0=Off
-value.EDGE_HIGHLIGHT_ON_ENTITIES.1=On
 
 
 
@@ -940,34 +952,28 @@ value.BLOOM_STYLE.2=Realistic
 
 option.BLOOM_QUALITY=Bloom Quality
 option.BLOOM_QUALITY.comment=Controls the number of samples for bloom level
+value.BLOOM_QUALITY.-1=Use Style
 
-option.BLOOM_LEVELS=Bloom Levels
-option.BLOOM_LEVELS.comment=How many layers of bloom to calculate. If you increase this then you might want to decrease Bloom Size and increase Bloom Amount (and vice versa)
-
-option.BLOOM_SIZE=Bloom Size
-value.BLOOM_SIZE.-1=Use Style
+option.BLOOM_RENDER_SCALE=Bloom Render Scale
+option.BLOOM_RENDER_SCALE.comment=Controls the resolution that bloom is rendered at. Each dimension is decreased by this amount, meaning the number of pixels is decreased by this value squared, meaning the default value of x0.25 is 16x less pixels
+value.BLOOM_RENDER_SCALE.3=x0.125
+value.BLOOM_RENDER_SCALE.2=x0.25
+value.BLOOM_RENDER_SCALE.1=x0.5
+value.BLOOM_RENDER_SCALE.0=x1
 
 option.BLOOM_AMOUNT=Bloom Amount
-option.BLOOM_AMOUNT.comment=The amount of bloom when in the overworld
 value.BLOOM_AMOUNT.-1=Use Style
 
 option.BLOOM_NETHER_AMOUNT=Bloom Nether Amount
-option.BLOOM_NETHER_AMOUNT.comment=The amount of bloom when in the nether
+option.BLOOM_NETHER_AMOUNT.comment=How much to increase Bloom Amount when in the nether
 value.BLOOM_NETHER_AMOUNT.-1=Use Style
 
 option.BLOOM_END_AMOUNT=Bloom End Amount
-option.BLOOM_END_AMOUNT.comment=The amount of bloom when in the end
+option.BLOOM_END_AMOUNT.comment=How much to increase Bloom Amount when in the end
 value.BLOOM_END_AMOUNT.-1=Use Style
 
-option.EMISSIVES_BLOOM_ENABLED=Emissives Bloom Enabled
-option.EMISSIVES_BLOOM_ENABLED.comment=Adds extra bloom to emissive textures, likely with a small performance cost. Note: you probably won't notice any difference turning this on if the other bloom settings are left at default values due to how subtle the default bloom is
-value.EMISSIVES_BLOOM_ENABLED.-1=Use Style
-value.EMISSIVES_BLOOM_ENABLED.0=Off
-value.EMISSIVES_BLOOM_ENABLED.1=On
-
-option.EMISSIVES_BLOOM_AMOUNT=Emissives Bloom Amount
-option.EMISSIVES_BLOOM_AMOUNT.comment=Adds extra bloom to emissive textures, likely with a small performance cost. Note: you probably won't notice any difference turning this on if the other bloom settings are left at default values due to how subtle the default bloom is
-value.EMISSIVES_BLOOM_AMOUNT.-1=Use Style
+option.BLOOM_SIZE=Bloom Size
+value.BLOOM_SIZE.-1=Use Style
 
 option.BLOOM_LOW_CUTOFF=Bloom Low Cutoff
 option.BLOOM_LOW_CUTOFF.comment=The value at which all colors are treated as equally dark
@@ -988,18 +994,6 @@ value.BLOOM_DETECT_TINT_GREEN.-1=Use Style
 option.BLOOM_DETECT_TINT_BLUE=Bloom Detect Tint Blue
 option.BLOOM_DETECT_TINT_BLUE.comment=Before bloom contribution is calculated, the screen color is multiplied by this color value. If you, for example, want to decrease the amount of yellow bloom then you should use a red/green/blue value like (0.8, 0.8, 1.0)
 value.BLOOM_DETECT_TINT_BLUE.-1=Use Style
-
-option.BLOOM_FINAL_TINT_RED=Bloom Final Tint Red
-option.BLOOM_FINAL_TINT_RED.comment=How much to tint the bloom color that is applied to the image
-value.BLOOM_FINAL_TINT_RED.-1=Use Style
-
-option.BLOOM_FINAL_TINT_GREEN=Bloom Final Tint Green
-option.BLOOM_FINAL_TINT_GREEN.comment=How much to tint the bloom color that is applied to the image
-value.BLOOM_FINAL_TINT_GREEN.-1=Use Style
-
-option.BLOOM_FINAL_TINT_BLUE=Bloom Final Tint Blue
-option.BLOOM_FINAL_TINT_BLUE.comment=How much to tint the bloom color that is applied to the image
-value.BLOOM_FINAL_TINT_BLUE.-1=Use Style
 
 
 
@@ -1044,9 +1038,9 @@ option.REFLECTION_ITERATIONS.comment=The number of steps that the pseudo-raytrac
 option.REFLECTION_DITHER_AMOUNT=Reflection Dither Amount
 option.REFLECTION_DITHER_AMOUNT.comment=How much dithering to add to reflections
 
-option.REFLECTIONS_RENDER_SCALE=Reflections Render Scale
-option.REFLECTIONS_RENDER_SCALE.comment=The resolution at which reflections will be processed
-prefix.REFLECTIONS_RENDER_SCALE=x
+option.REFLECTION_FRESNEL=Reflection Fresnel Amount
+option.REFLECTION_FRESNEL.comment=How much the angle of the reflection affects the reflectiveness. A fresnel of 1.0 makes the reflection completely disappear when looking head-on and a value of 0 makes it always the same strength
+value.REFLECTION_FRESNEL.-1=Use Style
 
 option.BLOCK_REFLECTION_AMOUNT_SURFACE=(Surface) Block Reflection Strength
 option.BLOCK_REFLECTION_AMOUNT_SURFACE.comment=Max reflection strength for blocks in sunlight
@@ -1067,14 +1061,6 @@ value.WATER_REFLECTION_AMOUNT_UNDERGROUND.-1=Use Style
 option.REFLECTIONS_BRIGHTNESS=Reflections Brightness
 option.REFLECTIONS_BRIGHTNESS.comment=How much to brighten/darken reflections (only effects reflected terrain)
 value.REFLECTIONS_BRIGHTNESS.-1=Use Style
-
-option.SKY_OBJECT_REFLECTIONS_BRIGHTNESS=Sky Objects Brightness
-option.SKY_OBJECT_REFLECTIONS_BRIGHTNESS.comment=How much to brighten sky objects (the sun, moon, and stars)
-value.SKY_OBJECT_REFLECTIONS_BRIGHTNESS.-1=Use Style
-
-option.REFLECTION_FRESNEL=Reflection Fresnel Amount
-option.REFLECTION_FRESNEL.comment=How much the angle of the reflection affects the reflectiveness. A fresnel of 1.0 makes the reflection completely disappear when looking head-on and a value of 0 makes it always the same strength
-value.REFLECTION_FRESNEL.-1=Use Style
 
 #option.RAIN_REFLECTION_AMOUNT=Rain Reflection Strength
 #option.RAIN_REFLECTION_AMOUNT.comment=Max rain reflections strength
@@ -1480,98 +1466,9 @@ option.COLORED_PARTICLE_TRANSPARENCY=Colored Particle Transparency
 option.COLORED_PARTICLE_TRANSPARENCY.comment=Modifies the transparency of particles that have dynamic color, such as potion effect particles
 value.COLORED_PARTICLE_TRANSPARENCY.-1=Use Style
 
-option.LOW_LIGHT_DESATURATION=Low Light Desaturation
-option.LOW_LIGHT_DESATURATION.comment=Simulates the visual desaturation you see in low light conditions (setting this to 0.0 fully disables it)
-value.LOW_LIGHT_DESATURATION.-1=Use Style
-value.LOW_LIGHT_DESATURATION.0=0.0
-value.LOW_LIGHT_DESATURATION.5=0.05
-value.LOW_LIGHT_DESATURATION.10=0.1
-value.LOW_LIGHT_DESATURATION.15=0.15
-value.LOW_LIGHT_DESATURATION.20=0.2
-value.LOW_LIGHT_DESATURATION.25=0.25
-value.LOW_LIGHT_DESATURATION.30=0.3
-value.LOW_LIGHT_DESATURATION.35=0.35
-value.LOW_LIGHT_DESATURATION.40=0.4
-value.LOW_LIGHT_DESATURATION.45=0.45
-value.LOW_LIGHT_DESATURATION.50=0.5
-value.LOW_LIGHT_DESATURATION.55=0.55
-value.LOW_LIGHT_DESATURATION.60=0.6
-value.LOW_LIGHT_DESATURATION.65=0.65
-value.LOW_LIGHT_DESATURATION.70=0.7
-value.LOW_LIGHT_DESATURATION.75=0.75
-value.LOW_LIGHT_DESATURATION.80=0.8
-value.LOW_LIGHT_DESATURATION.85=0.85
-value.LOW_LIGHT_DESATURATION.90=0.9
-value.LOW_LIGHT_DESATURATION.95=0.95
-value.LOW_LIGHT_DESATURATION.100=1.0
-
-option.LOW_LIGHT_CONTRAST=Low Light Contrast
-option.LOW_LIGHT_CONTRAST.comment=Simulates the visual contrast decrease you see in low light conditions (setting this to 0.0 fully disables it)
-value.LOW_LIGHT_CONTRAST.-1=Use Style
-value.LOW_LIGHT_CONTRAST.0=0.0
-value.LOW_LIGHT_CONTRAST.-5=-0.05
-value.LOW_LIGHT_CONTRAST.-10=-0.1
-value.LOW_LIGHT_CONTRAST.-15=-0.15
-value.LOW_LIGHT_CONTRAST.-20=-0.2
-value.LOW_LIGHT_CONTRAST.-25=-0.25
-value.LOW_LIGHT_CONTRAST.-30=-0.3
-value.LOW_LIGHT_CONTRAST.-35=-0.35
-value.LOW_LIGHT_CONTRAST.-40=-0.4
-value.LOW_LIGHT_CONTRAST.-45=-0.45
-value.LOW_LIGHT_CONTRAST.-50=-0.5
-value.LOW_LIGHT_CONTRAST.-55=-0.55
-value.LOW_LIGHT_CONTRAST.-60=-0.6
-value.LOW_LIGHT_CONTRAST.-65=-0.65
-value.LOW_LIGHT_CONTRAST.-70=-0.7
-value.LOW_LIGHT_CONTRAST.-75=-0.75
-value.LOW_LIGHT_CONTRAST.-80=-0.8
-value.LOW_LIGHT_CONTRAST.-85=-0.85
-value.LOW_LIGHT_CONTRAST.-90=-0.9
-value.LOW_LIGHT_CONTRAST.-95=-0.95
-value.LOW_LIGHT_CONTRAST.-100=-1.0
-
-option.LOW_LIGHT_STATIC_STRENGTH=Low Light Static Strength
-option.LOW_LIGHT_STATIC_STRENGTH.comment=Simulates the visual noise you see in low light conditions (setting this to 0.0 fully disables it)
-value.LOW_LIGHT_STATIC_STRENGTH.-1=Use Style
-value.LOW_LIGHT_STATIC_STRENGTH.0=0.0
-value.LOW_LIGHT_STATIC_STRENGTH.5=0.05
-value.LOW_LIGHT_STATIC_STRENGTH.10=0.1
-value.LOW_LIGHT_STATIC_STRENGTH.15=0.15
-value.LOW_LIGHT_STATIC_STRENGTH.20=0.2
-value.LOW_LIGHT_STATIC_STRENGTH.25=0.25
-value.LOW_LIGHT_STATIC_STRENGTH.30=0.3
-value.LOW_LIGHT_STATIC_STRENGTH.35=0.35
-value.LOW_LIGHT_STATIC_STRENGTH.40=0.4
-value.LOW_LIGHT_STATIC_STRENGTH.45=0.45
-value.LOW_LIGHT_STATIC_STRENGTH.50=0.5
-value.LOW_LIGHT_STATIC_STRENGTH.55=0.55
-value.LOW_LIGHT_STATIC_STRENGTH.60=0.6
-value.LOW_LIGHT_STATIC_STRENGTH.65=0.65
-value.LOW_LIGHT_STATIC_STRENGTH.70=0.7
-value.LOW_LIGHT_STATIC_STRENGTH.75=0.75
-value.LOW_LIGHT_STATIC_STRENGTH.80=0.8
-value.LOW_LIGHT_STATIC_STRENGTH.85=0.85
-value.LOW_LIGHT_STATIC_STRENGTH.90=0.9
-value.LOW_LIGHT_STATIC_STRENGTH.95=0.95
-value.LOW_LIGHT_STATIC_STRENGTH.100=1.0
-value.LOW_LIGHT_STATIC_STRENGTH.110=1.1
-value.LOW_LIGHT_STATIC_STRENGTH.120=1.2
-value.LOW_LIGHT_STATIC_STRENGTH.130=1.3
-value.LOW_LIGHT_STATIC_STRENGTH.140=1.4
-value.LOW_LIGHT_STATIC_STRENGTH.150=1.5
-value.LOW_LIGHT_STATIC_STRENGTH.160=1.6
-value.LOW_LIGHT_STATIC_STRENGTH.170=1.7
-value.LOW_LIGHT_STATIC_STRENGTH.180=1.8
-value.LOW_LIGHT_STATIC_STRENGTH.190=1.9
-value.LOW_LIGHT_STATIC_STRENGTH.200=2.0
-
 option.ENTITY_FLASH_STRENGTH=Entity Flash Strength
-option.ENTITY_FLASH_STRENGTH.comment=Controls the strength of entity flashes (such as hitting entities, creepers flashing before exploding, etc)
+option.ENTITY_FLASH_STRENGTH.comment=Controls the strength of entity flashes, such as hitting entities, creepers flashing before exploding, etc
 value.ENTITY_FLASH_STRENGTH.-1=Use style
-
-option.ENTITY_FLASH_GLOW_STRENGTH=Entity Flash Glowing Strength
-option.ENTITY_FLASH_GLOW_STRENGTH.comment=Makes entities glow when flashing (such as hitting entities, creepers flashing before exploding, etc)
-value.ENTITY_FLASH_GLOW_STRENGTH.-1=Use Style
 
 
 
@@ -1724,10 +1621,6 @@ value.WATER_FOAM_SIZE.-1=Use Style
 
 screen.WATER_COLOR_MENU=Water Color
 
-option.WATER_TEXTURE_INFLUENCE=Water Texture Influence
-option.WATER_TEXTURE_INFLUENCE.comment=When this is set to 0.0, the base water color is fully controlled by the biome's water color (this is applied before the 'Water Tint Red/Green/Blue' settings and the 'Water Biome Influence' setting)
-value.WATER_TEXTURE_INFLUENCE.-1=Use Style
-
 option.WATER_BIOME_INFLUENCE=Water Biome Influence
 option.WATER_BIOME_INFLUENCE.comment=How much to saturate / desaturate the vanilla water (this is applied before the 'Water Tint Red/Green/Blue' settings)
 value.WATER_BIOME_INFLUENCE.-1=Use Style
@@ -1827,28 +1720,9 @@ value.SKY_WEATHER_DESATURATION.-1=Use Style
 
 screen.CLOUDS_MENU=Clouds
 
-option.CLOUDS_TYPE=Clouds Type
-option.CLOUDS_TYPE.comment=Switches between vanilla cloud rendering, story-mode-like clouds, volumetric vanilla-like clouds, and realistic volumetric clouds
-value.CLOUDS_TYPE.-1=Use Style
-value.CLOUDS_TYPE.1=Vanilla
-value.CLOUDS_TYPE.2=Story Mode
-value.CLOUDS_TYPE.3=Volumetric Vanilla
-value.CLOUDS_TYPE.4=Realistic
-
-
-
-
-
-
-screen.VANILLA_STORY_CLOUDS_MENU=Vanilla / Story Mode
-
 option.VANILLA_CLOUD_TRANSPARENCY=Cloud Transparency (Vanilla)
 option.VANILLA_CLOUD_TRANSPARENCY.comment=Transparency for vanilla-style clouds
 value.VANILLA_CLOUD_TRANSPARENCY.-1=Use Style
-
-option.STORY_MODE_CLOUDS_CURVE=Story Mode Clouds Curve
-option.STORY_MODE_CLOUDS_CURVE.comment=Controls the transparency fade of story-mode-type clouds
-value.STORY_MODE_CLOUDS_CURVE.-1=Use Style
 
 option.NEARBY_CLOUD_TRANSPARENCY=Nearby Cloud Transparency
 option.NEARBY_CLOUD_TRANSPARENCY.comment=Transparency for nearby clouds, only works for non-realistic clouds
@@ -1866,44 +1740,25 @@ option.CLOUD_FOG_CURVE=Cloud Fog Curve
 option.CLOUD_FOG_CURVE.comment=Set how quickly the clouds fade out
 value.CLOUD_FOG_CURVE.-1=Use Style
 
-option.VANILLA_CLOUDS_HEIGHT=Detected Clouds Height
-option.VANILLA_CLOUDS_HEIGHT.comment=Sometimes the shader doesn't know what the actual cloud height is, this can be used to override the default system and manually specify it
-value.VANILLA_CLOUDS_HEIGHT.0=Auto Detect
+option.STORY_MODE_CLOUDS_ENABLED=Story Mode Clouds Enabled
+option.STORY_MODE_CLOUDS_ENABLED.comment=Enables clouds similar to that of Minecraft Story Mode (requires Realistic Clouds to be disabled)
+value.STORY_MODE_CLOUDS_ENABLED.-1=Use Style
 
-option.VANILLA_CLOUDS_HEIGHT_OFFSET=Clouds Height Offset
-option.VANILLA_CLOUDS_HEIGHT_OFFSET.comment=Moves the vanilla clouds up/down (this is sometimes/usually broken due to culling, which is something the shader can't fix)
+option.STORY_MODE_CLOUDS_CURVE=Story Mode Clouds Curve
+option.STORY_MODE_CLOUDS_CURVE.comment=Controls the transparency fade of story-mode-type clouds
+value.STORY_MODE_CLOUDS_CURVE.-1=Use Style
 
-option.VANILLA_CLOUDS_SCALE_XZ=Vanilla Clouds Scale (Horizontal)
-option.VANILLA_CLOUDS_SCALE_XZ.comment=Scales the vanilla clouds by a certain amount (in the x and z directions). There are known and unfixable limitations here, also setting the horizontal and vertical scales to the same value looks the same at all scales (e.g. a horizontal scale of 2.0 and a vertical scale of 2.0 will look the same as if both are 1.0)
-value.VANILLA_CLOUDS_SCALE_XZ.-1=Use Style
+option.REALISTIC_CLOUDS_ENABLED=Realistic Clouds Enabled
+value.REALISTIC_CLOUDS_ENABLED.-1=Use Style
+value.REALISTIC_CLOUDS_ENABLED.0=Off
+value.REALISTIC_CLOUDS_ENABLED.1=On
 
-option.VANILLA_CLOUDS_SCALE_Y=Vanilla Clouds Scale (Vertical)
-option.VANILLA_CLOUDS_SCALE_Y.comment=Scales the vanilla clouds by a certain amount (in the y direction). There are known and unfixable limitations here, also setting the horizontal and vertical scales to the same value looks the same at all scales (e.g. a horizontal scale of 2.0 and a vertical scale of 2.0 will look the same as if both are 1.0)
-
-
-
-
-
-screen.VOL_VANILLA_CLOUDS_MENU=Volumetric Vanilla Clouds
-
-option.VOL_VANILLA_CLOUDS_MIDDLE=Clouds Height
-
-option.VOL_VANILLA_CLOUDS_THICKNESS=Clouds Vertical Thickness
-
-option.VOL_VANILLA_CLOUDS_DENSITY=Clouds Density
+option.REALISTIC_CLOUD_DENSITY=Cloud Density (Realistic)
+option.REALISTIC_CLOUD_DENSITY.comment=Density of realistic clouds
+value.REALISTIC_CLOUD_DENSITY.-1=Use Style
 
 option.CLOUDS_QUALITY=Clouds Quality
-option.CLOUDS_QUALITY.comment=Quality of all clouds rendering
-
-
-
-
-
-screen.REALISTIC_CLOUDS_MENU=Realistic Clouds
-
-option.REALISTIC_CLOUDS_DENSITY=Clouds Density
-option.REALISTIC_CLOUDS_DENSITY.comment=Density of volumetric clouds
-value.REALISTIC_CLOUDS_DENSITY.-1=Use Style
+option.CLOUDS_QUALITY.comment=Quality of realistic clouds
 
 option.CLOUD_COVERAGE=Cloud Coverage
 value.CLOUD_COVERAGE.-1=Use Style
@@ -1912,13 +1767,17 @@ option.CLOUD_WEATHER_COVERAGE=Cloud Weather Coverage
 option.CLOUD_WEATHER_COVERAGE.comment=Coverage for clouds when raining / snowing
 value.CLOUD_WEATHER_COVERAGE.-1=Use Style
 
-option.REALISTIC_CLOUDS_BOTTOM_Y=Cloud Bottom Level
-option.REALISTIC_CLOUDS_BOTTOM_Y.comment=The y-level where realistic clouds start
-value.REALISTIC_CLOUDS_BOTTOM_Y.-1=Use Style
+option.CLOUD_BOTTOM_Y=Cloud Bottom Level
+option.CLOUD_BOTTOM_Y.comment=The y-level where realistic clouds start
+value.CLOUD_BOTTOM_Y.-1=Use Style
 
-option.REALISTIC_CLOUDS_TOP_Y=Cloud Top Level
-option.REALISTIC_CLOUDS_TOP_Y.comment=the y-level where realistic clouds stop
-value.REALISTIC_CLOUDS_TOP_Y.-1=Use Style
+option.CLOUD_TOP_Y=Cloud Top Level
+option.CLOUD_TOP_Y.comment=the y-level where realistic clouds stop
+value.CLOUD_TOP_Y.-1=Use Style
+
+option.CLOUD_OPACITY_DISTANCE=Cloud Opacity Distance
+option.CLOUD_OPACITY_DISTANCE.comment=Controls the density of realistic clouds, lower values make the clouds thicken faster
+value.CLOUD_OPACITY_DISTANCE.-1=Use Style
 
 
 
@@ -2002,8 +1861,8 @@ value.CLOUD_WEATHER_TINT_BLUE.-1=Use Style
 
 
 
-screen.REALISTIC_CLOUD_NOISES_MENU=Realistic Cloud Noise Values
-screen.REALISTIC_CLOUD_NOISES_MENU.comment=Settings for realistic clouds noise
+screen.CLOUD_NOISES_MENU=Cloud Noise Values
+screen.CLOUD_NOISES_MENU.comment=Settings for realistic clouds noise
 
 option.CLOUD_LAYER_1_SCALE=Layer 1 Scale
 option.CLOUD_LAYER_1_SCALE.comment=How large this layer of noise is
@@ -2266,7 +2125,7 @@ option.NETHER_SKY_FOG_INFLUENCE.comment=How much of the vanilla fog to add to th
 value.NETHER_SKY_FOG_INFLUENCE.-1=Use Style
 
 option.NETHER_SKY_FOG_SATURATION=Fog Saturation
-option.NETHER_SKY_FOG_SATURATION.comment=How much to increase/decrease the vanilla fog's saturation before adding to the sky color
+option.NETHER_SKY_FOG_SATURATION.comment=How much to increase/decrease the vanilla fog saturation before adding to the sky color
 value.NETHER_SKY_FOG_SATURATION.-1=Use Style
 
 option.NETHER_SKY_TINT_RED=Tint Red
@@ -2299,10 +2158,6 @@ option.END_SKY_BLUE=End Sky Blue
 option.END_SKY_BLUE.comment=Color for the end sky (the darker half of the static, this is half as sensitive as End Static Blue)
 value.END_SKY_BLUE.-1=Use Style
 
-option.END_SKY_BRIGHTNESS=End Sky Brightness
-option.END_SKY_BRIGHTNESS.comment=Color for the end sky (the darker half of the static, this is half as sensitive as End Static Brightness)
-value.END_SKY_BRIGHTNESS.-1=Use Style
-
 option.END_STATIC_RED=End Static Red
 option.END_STATIC_RED.comment=Color for the end sky static (the brighter half of the static)
 value.END_STATIC_RED.-1=Use Style
@@ -2314,10 +2169,6 @@ value.END_STATIC_GREEN.-1=Use Style
 option.END_STATIC_BLUE=End Static Blue
 option.END_STATIC_BLUE.comment=Color for the end sky static (the brighter half of the static)
 value.END_STATIC_BLUE.-1=Use Style
-
-option.END_STATIC_BRIGHTNESS=End Static Brightness
-option.END_STATIC_BRIGHTNESS.comment=Color for the end sky static (the brighter half of the static)
-value.END_STATIC_BRIGHTNESS.-1=Use Style
 
 
 
@@ -2447,21 +2298,13 @@ prefix.VOXY_BORDER_FOG_DIST_MULT=x
 screen.ATMOSPHERIC_FOG_MENU=Atmospheric Fog
 screen.ATMOSPHERIC_FOG_MENU.comment=Fog that gives the world more depth, atmosphere, and color
 
-option.DAY_ATMOSPHERIC_FOG_DENSITY=Atmospheric Fog Density (Day)
-option.DAY_ATMOSPHERIC_FOG_DENSITY.comment=General-purpose fog (at day)
-value.DAY_ATMOSPHERIC_FOG_DENSITY.-1=Use Style
+option.ATMOSPHERIC_FOG_DENSITY=Atmospheric Fog Density
+option.ATMOSPHERIC_FOG_DENSITY.comment=General-purpose fog
+value.ATMOSPHERIC_FOG_DENSITY.-1=Use Style
 
-option.NIGHT_ATMOSPHERIC_FOG_DENSITY=Atmospheric Fog Density (Night)
+option.NIGHT_ATMOSPHERIC_FOG_DENSITY=Night Atmospheric Fog Density
 option.NIGHT_ATMOSPHERIC_FOG_DENSITY.comment=General-purpose fog (at night)
 value.NIGHT_ATMOSPHERIC_FOG_DENSITY.-1=Use Style
-
-option.SUNRISE_ATMOSPHERIC_FOG_DENSITY=Atmospheric Fog Density (Sunrise)
-option.SUNRISE_ATMOSPHERIC_FOG_DENSITY.comment=General-purpose fog (at sunrise)
-value.SUNRISE_ATMOSPHERIC_FOG_DENSITY.-1=Use Style
-
-option.SUNSET_ATMOSPHERIC_FOG_DENSITY=Atmospheric Fog Density (Sunset)
-option.SUNSET_ATMOSPHERIC_FOG_DENSITY.comment=General-purpose fog (at sunset)
-value.SUNSET_ATMOSPHERIC_FOG_DENSITY.-1=Use Style
 
 option.UNDERGROUND_FOG_DENSITY=Underground Fog Density
 option.UNDERGROUND_FOG_DENSITY.comment=Atmospheric fog density when underground
@@ -2501,37 +2344,17 @@ value.END_FOG_DENSITY.-1=Use Style
 
 screen.IN_LIQUID_FOG_MENU=In-Liquid Fog
 
-option.WATER_FOG_BASE_RED=Water Fog Base Red
-option.WATER_FOG_BASE_RED.comment=The base red value for the underwater fog color (this is simply added to the vanilla fog influence to get the final fog color)
-value.WATER_FOG_BASE_RED.-1=Use Style
+option.WATER_FOG_RED=Water Fog Red
+option.WATER_FOG_RED.comment=Fog color when underwater
+value.WATER_FOG_RED.-1=Use Style
 
-option.WATER_FOG_BASE_GREEN=Water Fog Base Green
-option.WATER_FOG_BASE_GREEN.comment=The base green value for the underwater fog color (this is simply added to the vanilla fog influence to get the final fog color)
-value.WATER_FOG_BASE_GREEN.-1=Use Style
+option.WATER_FOG_GREEN=Water Fog Green
+option.WATER_FOG_GREEN.comment=Fog color when underwater
+value.WATER_FOG_GREEN.-1=Use Style
 
-option.WATER_FOG_BASE_BLUE=Water Fog Base Blue
-option.WATER_FOG_BASE_BLUE.comment=The base blue value for the underwater fog color (this is simply added to the vanilla fog influence to get the final fog color)
-value.WATER_FOG_BASE_BLUE.-1=Use Style
-
-option.WATER_VANILLA_FOG_INFLUENCE=Water Vanilla Fog Influence
-option.WATER_VANILLA_FOG_INFLUENCE.comment=How much of the vanilla fog to add to the fog color (this is simply added to the base value to get the final fog color, also note that the vanilla water color seems to start dark and slowly become brighter after entering water)
-value.WATER_VANILLA_FOG_INFLUENCE.-1=Use Style
-
-option.WATER_VANILLA_FOG_SATURATION=Water Vanilla Fog Saturation
-option.WATER_VANILLA_FOG_SATURATION.comment=How much to increase/decrease the vanilla fog's saturation before adding to the sky color
-value.WATER_VANILLA_FOG_SATURATION.-1=Use Style
-
-option.WATER_FOG_TINT_RED=Water Fog Red Tint
-option.WATER_FOG_TINT_RED.comment=The final red multiplier for the underwater fog color
-value.WATER_FOG_TINT_RED.-1=Use Style
-
-option.WATER_FOG_TINT_GREEN=Water Fog Green Tint
-option.WATER_FOG_TINT_GREEN.comment=The final green multiplier for the underwater fog color
-value.WATER_FOG_TINT_GREEN.-1=Use Style
-
-option.WATER_FOG_TINT_BLUE=Water Fog Blue Tint
-option.WATER_FOG_TINT_BLUE.comment=The final blue multiplier for the underwater fog color
-value.WATER_FOG_TINT_BLUE.-1=Use Style
+option.WATER_FOG_BLUE=Water Fog Blue
+option.WATER_FOG_BLUE.comment=Fog color when underwater
+value.WATER_FOG_BLUE.-1=Use Style
 
 option.WATER_FOG_DENSITY=Water Fog Density
 option.WATER_FOG_DENSITY.comment=Density of fog when underwater
@@ -2592,6 +2415,11 @@ option.DO_COLOR_CODED_GBUFFERS=Color Coded Gbuffers
 option.DO_COLOR_CODED_GBUFFERS.comment=Sets the colors of everything according to which shader is rendering them, useful for debugging
 value.DO_COLOR_CODED_GBUFFERS.0=Off
 value.DO_COLOR_CODED_GBUFFERS.1=On
+
+option.BLOCK_BREAKING_3D=3D Block Breaking
+option.BLOCK_BREAKING_3D.comment=Parallax (3D recessed) crack animation. ON needs a 3D-breaking resource pack (whose destroy textures are made for it) — with the pack OFF the effect just overlays on the flat vanilla cracks, so turn this OFF when you're not using such a pack. OFF = plain flat vanilla/resource-pack cracks.
+option.BLOCK_BREAKING_CONTRAST=Block Breaking Contrast
+option.BLOCK_BREAKING_CONTRAST.comment=How dark the breaking cracks appear. 1.0 = default, lower = fainter, higher = darker/deeper.
 
 option.HAND_DEPTH=Hand Depth
 option.HAND_DEPTH.comment=Depth test value for the hand and hand items\nIf this is too low, the hand won't be detected and will be shaded incorrectly\nIf this is too high, close-up objects will be treated as hand items and will be shaded incorrectly
@@ -2763,13 +2591,15 @@ option.FOG_IGNORES_TRANSPARENTS=Fog Ignores Transparents
 option.FOG_IGNORES_TRANSPARENTS.comment=Fixes things like Particle Rain, but makes other things look worse
 value.FOG_IGNORES_TRANSPARENTS.0=Off
 value.FOG_IGNORES_TRANSPARENTS.1=On
+option.CL_SCULKSENSOR_HUE=Sculk Sensor (active) - Hue
+option.CL_SCULKSENSOR_SAT=Sculk Sensor (active) - Saturation
+option.CL_ENCHANT_STRENGTH=Enchanted Items - Light
+option.ENCHANTED_ITEM_BRIGHTNESS=Enchanted Items - Brightness
+option.ENCHANTED_ITEM_BRIGHTNESS.comment=Minimum brightness of the enchanted item itself (Enchantment Outlines resource pack) - it never gets darker than this. Doesn't affect the outline or the glint.
+option.CL_ENCHANT_STRENGTH.comment=Small purple light cast by enchanted held items (with the Enchantment Outlines resource pack), which also render fullbright. Doesn't affect Enchantment Glint Strength. 0 = no light (items stay fullbright).
 
-option.HIDE_OPAQUE_HAND=Hide Opaque Hand
-option.HIDE_OPAQUE_HAND.comment=Disables part of the hand rendering, can be useful is niche situations
-value.HIDE_OPAQUE_HAND.0=Off
-value.HIDE_OPAQUE_HAND.1=On
-
-option.HIDE_TRANSPARENT_HAND=Hide Transparent Hand
-option.HIDE_TRANSPARENT_HAND.comment=Disables part of the hand rendering, can be useful is niche situations
-value.HIDE_TRANSPARENT_HAND.0=Off
-value.HIDE_TRANSPARENT_HAND.1=On
+profile.ColoredLight=§dColoredLight
+option.CL_DAY_BOOST=Colored Light Day Boost
+option.CL_NIGHT_BOOST=Colored Light Night Boost
+option.CL_DAY_BOOST.comment=How much colored light resists being washed out by daylight (1.0 = vanilla).
+option.CL_NIGHT_BOOST.comment=How much colored light is boosted at night so it pops.

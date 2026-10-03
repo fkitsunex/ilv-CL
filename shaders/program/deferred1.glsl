@@ -17,23 +17,20 @@ in_out vec2 texcoord;
 #if OUTLINES_ENABLED == 1
 	#include "/lib/outlines.glsl"
 #endif
-#if EDGE_HIGHLIGHT_ENABLED == 1
-	#include "/lib/edge_highlight.glsl"
-#endif
 #if SSAO_ENABLED == 1
 	#include "/lib/ssao.glsl"
 #endif
 #ifdef DISTANT_HORIZONS
 	#define LOD_SCREEN_TO_VIEW_FN screenToViewDh
 	#define LOD_DEPTH_TEX DH_DEPTH_BUFFER_ALL
-	//#define LOD_MODEL_VIEW_INVERSE_MAT gbufferModelViewInverse
+	#define LOD_MODEL_VIEW_INVERSE_MAT gbufferModelViewInverse
 	#define LOD_PROJECTION_MAT dhProjection
 	#include "/lib/lod_ssao.glsl"
 #endif
 #ifdef VOXY
 	#define LOD_SCREEN_TO_VIEW_FN screenToViewVx
 	#define LOD_DEPTH_TEX vxDepthTexOpaque
-	//#define LOD_MODEL_VIEW_INVERSE_MAT vxModelViewInv
+	#define LOD_MODEL_VIEW_INVERSE_MAT vxModelViewInv
 	#define LOD_PROJECTION_MAT vxProj
 	#include "/lib/lod_ssao.glsl"
 #endif
@@ -83,6 +80,11 @@ void main() {
 	#endif
 	
 	
+	#if OUTLINES_ENABLED == 1
+		color *= 1.0 - getOutlineAmount();
+	#endif
+	
+	
 	vec3 skyColor = vec3(0.0);
 	if (skyAmount > 0.0) {
 		vec3 viewPos = screenToView(vec3(texcoord, 1.0));
@@ -116,19 +118,50 @@ void main() {
 		
 		vec4 data = texelFetch(OPAQUE_DATA_TEXTURE, texelcoord, 0);
 		vec2 lmcoord = unpack_2x8(data.x);
-		vec4 refSpecGlowingEntity = unpack_7_7_1_1(data.y);
+		vec2 refPlusSpec = unpack_2x8(data.y);
+		float reflectiveness = refPlusSpec.x;
+		float specularness = refPlusSpec.y;
 		vec3 normal = decodeNormal(data.zw);
 		#ifndef MODERN_BACKEND
-			vec3 viewPosUp    = screenToView(vec3(texcoord + vec2( 0.0, -1.0) * pixelSize, texelFetch(DEPTH_BUFFER_ALL, texelcoord + ivec2( 0, -1), 0).r));
-			vec3 viewPosDown  = screenToView(vec3(texcoord + vec2( 0.0,  1.0) * pixelSize, texelFetch(DEPTH_BUFFER_ALL, texelcoord + ivec2( 0,  1), 0).r));
-			vec3 viewPosLeft  = screenToView(vec3(texcoord + vec2(-1.0,  0.0) * pixelSize, texelFetch(DEPTH_BUFFER_ALL, texelcoord + ivec2(-1,  0), 0).r));
-			vec3 viewPosRight = screenToView(vec3(texcoord + vec2( 1.0,  0.0) * pixelSize, texelFetch(DEPTH_BUFFER_ALL, texelcoord + ivec2( 1,  0), 0).r));
+			vec3 viewPosUp    = screenToView(vec3(texcoord + ivec2( 0, -1) * pixelSize, texelFetch(DEPTH_BUFFER_ALL, texelcoord + ivec2( 0, -1), 0).r));
+			vec3 viewPosDown  = screenToView(vec3(texcoord + ivec2( 0,  1) * pixelSize, texelFetch(DEPTH_BUFFER_ALL, texelcoord + ivec2( 0,  1), 0).r));
+			vec3 viewPosLeft  = screenToView(vec3(texcoord + ivec2(-1,  0) * pixelSize, texelFetch(DEPTH_BUFFER_ALL, texelcoord + ivec2(-1,  0), 0).r));
+			vec3 viewPosRight = screenToView(vec3(texcoord + ivec2( 1,  0) * pixelSize, texelFetch(DEPTH_BUFFER_ALL, texelcoord + ivec2( 1,  0), 0).r));
 			vec3 xDir = normalize(viewPosLeft - viewPosRight);
 			vec3 yDir = normalize(viewPosUp - viewPosDown);
 			normal = cross(xDir, yDir);
 		#endif
-		float glowingAmount = refSpecGlowingEntity.x * refSpecGlowingEntity.z; // z holds whether or not it's glowing, x holds the glow amount if glowing
-		float specularness = refSpecGlowingEntity.y;
+		float glowingAmount = 0.0;
+		if (abs(specularness - 254.0 / 255.0) < 0.001) {
+			glowingAmount = reflectiveness * 2.0;
+			reflectiveness = 0.0;
+			specularness = 0.0;
+		} else if (abs(specularness - 251.0 / 255.0) < 0.002) {
+			// 251/255 = "entity fire" flag (gbuffers_entities): the flames on burning mobs, which vanilla draws
+			// at full brightness — show the texture unlit at 1.0 like vanilla instead of lit by the scene
+			fshFullbright = 1.0;
+			fshFullbrightLevel = 1.0;
+			specularness = 0.3;
+		} else if (abs(specularness - 252.0 / 255.0) < 0.002) {
+			// 252/255 = "fullbright" flag: enchanted item texels (Enchantment Outlines resource pack),
+			// rendered unlit like the pack's own core shader does. Also no reflections / glint.
+			fshFullbright = 1.0;
+			specularness = 0.3;
+		} else if (abs(specularness - 253.0 / 255.0) < 0.002) {
+			// 253/255 = "no-reflect overlay" flag (particles, nametags, mod UI). Restore the real
+			// specularness these programs used before the flag (0.3) so their lighting is unchanged —
+			// without this the flag value itself (≈0.99) gave them a bogus strong sun glint.
+			specularness = 0.3;
+			fshNoDynSplit = 1.0;
+			if (!depthIsHand(depth)) fshUpNormalSun = 1.0; // particles: undirected sun (see fsh_lighting)
+			#if COLORED_LIGHTING_ENABLED == 1
+				if (!depthIsHand(depth)) clSoftSample = 1.0; // particles (and nametags): soft colour edges
+			#endif
+		}
+		#if COLORED_LIGHTING_ENABLED == 1
+			if (depthIsHand(depth)) clIsHand = 1.0; // colour light for the hand is sampled at the camera
+			if (clSoftSample > 0.5) lmcoord.x = clParticleBlockLight(viewPos, normal, lmcoord.x); // particles: no in-wall blackout
+		#endif
 		float inSunlightAmount;
 		doFshLighting(color, inSunlightAmount, lmcoord.x, lmcoord.y, specularness, glowingAmount, viewPos, normal, depth);
 		
@@ -146,7 +179,7 @@ void main() {
 			
 			if (depth == 1.0 && dhDepth != 1.0) {
 				float vxAo = getLodAoAmount(normal);
-				color *= 1.01 - vxAo * 0.6 * VANILLA_AO_BRIGHT;
+				color *= 0.98 - vxAo * 0.48 * VANILLA_AO_BRIGHT;
 			}
 			
 		#endif
@@ -155,33 +188,20 @@ void main() {
 			
 			float voxyOpaqueDepth = texelFetch(VX_DEPTH_BUFFER_OPAQUE, texelcoord, 0).r;
 			vec3 voxyOpaqueViewPos = screenToViewVx(vec3(texcoord, voxyOpaqueDepth));
-			if (voxyOpaqueViewPos.z > viewPos.z - far / (16.0 * 5.0/8.0)) {
+			if (voxyOpaqueViewPos.z > viewPos.z - 0.5) {
 				float vxAo = getLodAoAmount(normal);
-				color *= 1.01 - vxAo * 0.6 * VANILLA_AO_BRIGHT;
+				color *= 0.98 - vxAo * 0.48 * VANILLA_AO_BRIGHT;
 			}
 			
 			float voxyTransparentDepth = texelFetch(VX_DEPTH_BUFFER_TRANS, texelcoord, 0).r;
 			vec3 voxyTransparentViewPos = screenToViewVx(vec3(texcoord, voxyTransparentDepth));
-			if (voxyTransparentViewPos.z > viewPos.z - far / (16.0 * 5.0/8.0) || depth > fromLinearDepth(0.9)) {
+			if (voxyTransparentViewPos.z > viewPos.z - 0.5 || depth > fromLinearDepth(0.9)) {
 				vec4 voxyTransparents = texelFetch(VOXY_TRANSPARENTS_TEXTURE, texelcoord, 0);
 				voxyTransparents.rgb *= 2.0;
 				voxyTransparents.a *= float(!depthIsHand(depth));
 				color.rgb = mix(color.rgb, voxyTransparents.rgb, voxyTransparents.a);
 			}
 			
-		#endif
-		
-		#if EDGE_HIGHLIGHT_ENABLED == 1
-			#if EDGE_HIGHLIGHT_ON_ENTITIES == 1
-				bool doEdgeHighlight = !depthIsHand(depth);
-			#else
-				bool doEdgeHighlight = !depthIsHand(depth) && refSpecGlowingEntity.w < 0.5;
-			#endif
-			if (doEdgeHighlight) {
-				float isEdgeHighlight = getEdgeHighlight(viewPos, playerPos, depth, normal);
-				color *= 1.0 + EDGE_HIGHLIGHT_BRIGHTNESS_MULT * 0.5 * isEdgeHighlight;
-				color += EDGE_HIGHLIGHT_BRIGHTNESS_LIFT * isEdgeHighlight;
-			}
 		#endif
 		
 		#if BORDER_FOG_ENABLED == 1
@@ -192,11 +212,6 @@ void main() {
 		#endif
 		
 	}
-	
-	
-	#if OUTLINES_ENABLED == 1
-		color = mix(color, LINE_OUTLINES_COLOR, getOutlineAmount());
-	#endif
 	
 	
 	/* DRAWBUFFERS:0 */

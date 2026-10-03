@@ -1,4 +1,4 @@
-#version 430 compatibility
+#version 430
 
 #define SHADER_SHADOWCOMP
 #define END

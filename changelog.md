@@ -1,124 +1,38 @@
-- v1.5.0b
-  - Doubled all emissive texture glowing amounts and increased max glowing ores strength
-  - Fixed crash when Style is not set to Vanilla
-  - Improved vanilla ao on distant LOD terrain
+# ILV-CL changelog
+
+ILV-CL is a fork of I Like Vanilla v1.4.0b by What42Pizza. All ILV-CL changes were written by Claude (Anthropic's AI).
+The original I Like Vanilla changelog follows below.
+
+- ILV-CL v0.6 (first public release)
+  - Colored voxel lighting: floodfill colored light from every light source, in every dimension, independent of real-time shadows
+  - 24 per-source hue + saturation sliders, master strength / saturation / reach / volume size, colored fog glow, day & night boosts
+  - Handheld colored light (per hand), dropped items, items held by mobs and glowing mobs (glow squid, magma cube) emit colored light
+  - Powered redstone glows and casts red light scaled by power; repeater/comparator torches glow; vanilla + Create redstone devices cast red light
+  - Sculk shrieker souls glow fullbright
+  - Full blocks (including unregistered / modded full cubes) block colored light; partial blocks still pass it
+  - Colored light no longer bleeds through walls, around block edges or onto particles behind blocks (corner-leak filter adapted from Complementary)
+  - Dynamic-light mods (LambDynLights): burning mobs / dropped torches keep their own warm light instead of amplifying colored sources (own held items still amplify); toggle + debug view
+  - Copycat blocks (Create, Copycats+, Create Connected) holding a light-source material emit that material's colored light
+  - Enchantment Outlines resource pack support: fullbright enchanted items (hand, players, mobs) with a brightness slider, tinted translucent first-person outline, small purple light from an enchanted held item (mixes with an offhand light)
+  - Burning mobs' flames render at vanilla brightness
+  - Particles: colored light like nearby surfaces (incl. day/night boosts), smooth color fade behind blocks, no blackout inside walls, undirected sun/moon light, correct Nether ambient
+  - Held and dropped items next to walls / ceilings are colored correctly
+  - Distant Horizons: water reflects and gets atmospheric fog; colored light, fog and reflections work with DH
+  - Reflections: breaking overlays, particles, held items, nametags and mod UI no longer leak into reflections; cleaner glass / ice / underwater reflections
+  - Fixed: Darkness effect flashing white, colored-fog dome, white block-entity breaking cracks, bright shadow blob under mobs, see-through player skin layer, Create contraptions turning green, dark wildflower stems, labPBR metal reflectance
+  - Colored Lighting menu in the main settings screen; complete "ColoredLight" and "ColoredLight-lite" (weaker GPUs) profiles
+  - Removed Better Clouds integration
 
 <br>
 
-- **v1.5.0** (26/09/26)
-  - Added setting 'Reflections Render Scale' (default is x0.6)
-  - Increased 'Reflection Iterations' from 45 to 60
-  - Changed default 'Shadow Map Distance Cutoff' value from x2.0 to x1.0
-  - Performance compared to last version can be up to 7-9% better (with 16 chunks render distance + voxy + 1080p)
-  - Improved bloom rendering (now more cartoonish, has faster falloff)
-  - Added fake shadows to LOD terrain
-  - Added setting 'Particles Brightness'
-  - Added settings 'Leaves Side Shading' and 'Leaves Ao Amount'
-  - Added settings 'End Sky Brightness' and 'End Static Brightness'
-  - Improved realistic cloud rendering when inside clouds
-  - Reworked cloud settings:
-    - Added setting 'Clouds Type'
-    - Added new clouds type "Volumetric Vanilla"
-    - Removed settings 'Story Mode Clouds Enabled' and 'Realistic Clouds Enabled' (merged into 'Clouds Type' setting)
-  - Updated setting 'Temporal Extra Depth Check' to have a 'Full' option
-  - Improved support for latest versions of Distant Horizons
-  - Improved end clouds
-  - Added setting 'Sky Object Reflections Brightness'
-  - The setting 'Reflections Brightness' now also affects transparent objects (such as clouds)
-  - Removed setting 'Bloom Render Scale'
-  - Fixed bug causing pbr materials to be too reflective
-  - Slightly tweaked settings and lighting
-  - Passed 3 million downloads!
-
-<br>
-<br>
-<br>
-
-- v1.4.4 (26/07/31)
-  - Added support (added block ids) for many modded blocks from many mods
-  - Added setting 'Water Caustics Type', with 'Texture-Based' being the new default
-  - Tweaked lighting and colors
-  - Fixed performance bug with ssao when very close to objects
-
-<br>
-
-- v1.4.3c (26/07/22)
-  - Fixed waving blocks not working
-  - Fixed enchantment glints not appearing on entities
-
-<br>
-
-- v1.4.3b (26/07/18)
-  - Improved mod compatibility
-  - Fixed several bugs
-  - Passed 2 million downloads!
-
-<br>
-
-- v1.4.3 (26/07/04)
-  - Added 'Low Light' features (all configurable):
-    - 'Low Light Desaturation'
-    - 'Low Light Contrast'
-    - 'Low Light Static' (disabled by default)
-  - Added setting 'Entity Flash Glowing Strength'
-  - Fixed values for 'Handheld Light Realism'
-  - Fixed 'Entity Flash Strength'
-  - Added settings 'Hide Opaque/Transparent Hand'
-  - Fixed realistic clouds
-  - Renamed 'Vanilla Clouds Height' to 'Detected Clouds Height' and added more values for it
-  - Added settings 'Vanilla Clouds Scale (Horizontal/Vertical)'
-  - Added setting 'Clouds Height Offset' (which may be broken for all users)
-  - Added support for the modded Biomes O Plenty blocks
-  - Fixed Blindness and Darkness effects
-
-<br>
-
-- v1.4.2b (26/06/23)
-  - Fixed jittering water with 'Extra Depth Check' enabled
-  - Fixed Distant Horizon terrain being visible close up
-  - Added distance fade-off to realistic style clouds (based on atmospheric fog settings)
-  - Added setting 'Edge Highlight On Entities' and improved edge highlight quality
-
-<br>
-
-- v1.4.2 (26/06/19)
-  - Improved temporal filtering (with CatmullRom sampling)
-  - Added setting 'Extra Depth Check' for temporal filtering
-  - Added options to only apply fxaa on entities and taa + temporal filter on everything else (enabled by default)
-  - Added edge highlights (similar to MC Dungeons)
-  - Added 'Emissives Bloom' feature (configurable, adds extra bloom to emissive pixels, disabled by default)
-  - Added 'Bloom Final Tint Red/Green/Blue' settings
-  - Added 'Atmospheric Fog Density (Sunrise/Sunset)' settings (and renamed 'ATMOSPHERIC_FOG_DENSITY' value to 'DAY_ATMOSPHERIC_FOG_DENSITY')
-  - Swapped handheld object side shading axis
-  - Tweaked emissive textures effect
-  - Added emissive glow to sculk blocks
-  - Adjusted sunrise/sunset timings
-  - Fixed falling rain/snow textures being too dark
-  - Fixed volumetric sunrays brightness jump at sunrise/sunset
-
-<br>
-
-- v1.4.1 (26/06/01)
-  - Added setting 'Bloom Levels'
-  - Reworked block lighting calculations
-  - Added setting 'Water Texture Influence'
-  - Replaced settings 'Water Fog Red/Green/Blue' with 'Water Fog Base Red/Green/Blue', 'Water Vanilla Fog Influence', 'Water Vanilla Fog Saturation', and 'Water Fog Red/Green/Blue Tint'
-  - Added setting 'Vanilla Clouds Height'
-  - Fixed 'Water Caustics Bright/Dark Brightness' settings
-  - Fixed bloom being off-center
-  - Fixed bug with transparent entities
-  - Tweaked settings
-
-<br>
-
-- v1.4.0b (26/05/23)
+- v1.4.0b
   - Replaced settings 'Shadows Enabled (Overworld/End)' with 'Shadows Type (Overworld/End)'
   - Disabled 'Fog Ignores Transparents' by default due to unexpected bugs
   - Improved the color and shape of water caustics
 
 <br>
 
-- **v1.4.0** (26/05/22)
+- v1.4.0 (26/05/22)
   - Added Story-Mode-like clouds (configurable)
   - Added new 'Vertical' end clouds type
   - Enabled border fog for Voxy
@@ -135,8 +49,6 @@
   - Fixed compiler warnings
   - Tweaked many settings and effects
 
-<br>
-<br>
 <br>
 
 - v1.3.7b (26/05/15)

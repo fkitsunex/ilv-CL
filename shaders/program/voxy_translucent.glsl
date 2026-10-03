@@ -1,5 +1,5 @@
 #undef SHADOWS_TYPE
-#define SHADOWS_TYPE 1
+#define SHADOWS_TYPE 0
 
 layout(location = 0) out vec4 albedoOut;
 layout(location = 1) out vec4 auxDataOut;
@@ -29,7 +29,7 @@ void voxy_emitFragment(VoxyFragmentParameters parameters) {
 		float((parameters.face >> 1) == 0),
 		float((parameters.face >> 1) == 1)
 	);
-	worldNormal *= float(parameters.face & 1u) * 2.0 - 1.0;
+	worldNormal *= float(parameters.face & 1) * 2.0 - 1.0;
 	
 	// foliage normals
 	#if OVERRIDE_FOLIAGE_NORMALS == 1
@@ -45,6 +45,8 @@ void voxy_emitFragment(VoxyFragmentParameters parameters) {
 	vec2 lmcoord = parameters.lightMap;
 	adjustLmcoord(lmcoord);
 	
+	doVshLighting(lmcoord, viewPos, normal);
+	
 	
 	// block-specific datas
 	float reflectiveness;
@@ -56,34 +58,20 @@ void voxy_emitFragment(VoxyFragmentParameters parameters) {
 	#include "/generated/blockDatas.glsl"
 	
 	
-	// vsh lighting
-	doVshLighting(lmcoord, glcolor, viewPos, normal, worldNormal);
-	
-	// add fake shadows
-	#if SHADOWS_TYPE == 1
-		const float fakeShadowsStrength = 0.125;
-	#else
-		const float fakeShadowsStrength = 0.25;
-	#endif
-	lmcoord.y = min(lmcoord.y, 1.0 - fakeShadowsStrength + fakeShadowsStrength * step(0.96, lmcoord.y));
-	
-	
 	// main color
-	vec4 rawColor = parameters.sampledColour;
-	vec4 color = rawColor;
-	color.rgb = color.rgb - (4.0 / 27.0) * color.rgb * color.rgb * color.rgb;
+	vec4 color = parameters.sampledColour;
 	color.rgb *= parameters.tinting.rgb;
+	vec4 rawColor = color;
 	color.rgb *= glcolor;
+	color.rgb = color.rgb - (4.0 / 27.0) * color.rgb * color.rgb * color.rgb;
 	
 	float m = getLum(color.rgb);
 	m = m * m * (3.0 - 2.0 * m);
 	color.rgb *= 1.0 - TEXTURE_CONTRAST * 0.125 + m * TEXTURE_CONTRAST * 0.25;
-	color.rgb = color.rgb * (1.0 + TEXTURE_CONTRAST_2 * 0.025) - TEXTURE_CONTRAST_2 * 0.025;
 	
 	
 	if (materialId == BLOCK_ID_WATER) {
 		
-		color.rgb = mix(parameters.tinting.rgb, color.rgb, WATER_TEXTURE_INFLUENCE);
 		color.rgb = mix(vec3(getLum(color.rgb)), color.rgb, WATER_BIOME_INFLUENCE);
 		
 		vec3 viewDir = normalize(viewPos);
@@ -96,16 +84,16 @@ void voxy_emitFragment(VoxyFragmentParameters parameters) {
 			if (wavingSurfaceAmount > 0.00001) {
 				float fresnelMult = mix(WAVING_WATER_FRESNEL_UNDERGROUND * 0.55, WAVING_WATER_FRESNEL_SURFACE * 0.55, lmcoord.y);
 				float frameTimeCounter = frameTimeCounter * WAVING_WATER_SPEED;
-				noisePos += (texture(noisetex, noisePos * 0.03125 + frameTimeCounter * vec2( 0.01,  0.01)).br * 2.0 - 1.0) * 0.4 * 0.18;
-				noisePos += (texture(noisetex, noisePos * 0.0625  + frameTimeCounter * vec2( 0.01, -0.01)).br * 2.0 - 1.0) * 0.25 * 0.18;
-				noisePos += (texture(noisetex, noisePos * 0.0625  + frameTimeCounter * vec2(-0.01,  0.01)).br * 2.0 - 1.0) * 0.25 * 0.18;
-				noisePos += (texture(noisetex, noisePos * 0.03125 + frameTimeCounter * vec2( 0.01,  0.01)).br * 2.0 - 1.0) * 0.4 * 0.18;
-				noisePos += (texture(noisetex, noisePos * 0.0625  + frameTimeCounter * vec2( 0.01, -0.01)).br * 2.0 - 1.0) * 0.25 * 0.18;
-				noisePos += (texture(noisetex, noisePos * 0.0625  + frameTimeCounter * vec2(-0.01,  0.01)).br * 2.0 - 1.0) * 0.25 * 0.18;
+				noisePos += (texture2D(noisetex, noisePos * 0.03125 + frameTimeCounter * vec2( 0.01,  0.01)).br * 2.0 - 1.0) * 0.4 * 0.18;
+				noisePos += (texture2D(noisetex, noisePos * 0.0625  + frameTimeCounter * vec2( 0.01, -0.01)).br * 2.0 - 1.0) * 0.25 * 0.18;
+				noisePos += (texture2D(noisetex, noisePos * 0.0625  + frameTimeCounter * vec2(-0.01,  0.01)).br * 2.0 - 1.0) * 0.25 * 0.18;
+				noisePos += (texture2D(noisetex, noisePos * 0.03125 + frameTimeCounter * vec2( 0.01,  0.01)).br * 2.0 - 1.0) * 0.4 * 0.18;
+				noisePos += (texture2D(noisetex, noisePos * 0.0625  + frameTimeCounter * vec2( 0.01, -0.01)).br * 2.0 - 1.0) * 0.25 * 0.18;
+				noisePos += (texture2D(noisetex, noisePos * 0.0625  + frameTimeCounter * vec2(-0.01,  0.01)).br * 2.0 - 1.0) * 0.25 * 0.18;
 				normal = vec3(0.0, 1.0, 0.0);
-				normal.xz += (texture(noisetex, noisePos * 0.03125 + frameTimeCounter * vec2( 0.01,  0.01)).br * 2.0 - 1.0) * 0.4;
-				normal.xz += (texture(noisetex, noisePos * 0.0625  + frameTimeCounter * vec2( 0.01, -0.01)).br * 2.0 - 1.0) * 0.25;
-				normal.xz += (texture(noisetex, noisePos * 0.0625  + frameTimeCounter * vec2(-0.01,  0.01)).br * 2.0 - 1.0) * 0.25;
+				normal.xz += (texture2D(noisetex, noisePos * 0.03125 + frameTimeCounter * vec2( 0.01,  0.01)).br * 2.0 - 1.0) * 0.4;
+				normal.xz += (texture2D(noisetex, noisePos * 0.0625  + frameTimeCounter * vec2( 0.01, -0.01)).br * 2.0 - 1.0) * 0.25;
+				normal.xz += (texture2D(noisetex, noisePos * 0.0625  + frameTimeCounter * vec2(-0.01,  0.01)).br * 2.0 - 1.0) * 0.25;
 				vec3 normalWithoutMult = mat3(gbufferModelView) * normalize(normal);
 				normal.xz *= wavingSurfaceAmount;
 				normal = mat3(gbufferModelView) * normalize(normal);
@@ -147,7 +135,7 @@ void voxy_emitFragment(VoxyFragmentParameters parameters) {
 	albedoOut = color;
 	auxDataOut = vec4(
 		pack_2x8(lmcoord),
-		pack_7_7_1_1(reflectiveness, specularness, 0.0, 0.0),
+		pack_2x8(reflectiveness, 0.0),
 		encodeNormal(normal)
 	);
 	

@@ -10,7 +10,7 @@
 		cloudSample = (cloudSample - (1.0 - END_CLOUDS_COVERAGE * 0.75)) / (END_CLOUDS_COVERAGE * 0.75);
 		cloudSample = 1.0 - (1.0 - cloudSample) * (1.0 - cloudSample);
 		const float heightScale = 64.0;
-		cloudSample *= heightScale / (heightScale + abs(pos.y - 55.0));
+		cloudSample *= heightScale / (heightScale + abs(pos.y - 55));
 		return clamp(cloudSample, 0.0, 1.0);
 	}
 #elif END_CLOUDS_TYPE == 2
@@ -59,10 +59,11 @@ vec2 computeEndClouds(vec3 playerPos) {
 			float density = sampleEndCloud(pos);
 			float invDensity = exp(density * densityMult);
 			invThickness *= invDensity;
-			brightness = mix(density * density, brightness, invDensity);
+			brightness += density * density;
 			pos += stepVec;
 		}
-		//invThickness = 1.0 - (1.0 - invThickness) * (1.0 - invThickness);
+		invThickness = 1.0 - (1.0 - invThickness) * (1.0 - invThickness);
+		brightness /= CLOUDS_QUALITY;
 		
 	#elif END_CLOUDS_TYPE == 2
 		

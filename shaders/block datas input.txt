@@ -56,8 +56,11 @@ custom code: ##
 ##
 // values greater than 1.0 only work here bc this isn't deferred lighting and the specular value is immediately used instead of stored
 specularness: 2.0
+// voxelise as fully transparent for coloured light: water must NOT tint the light passing through
+// it (CR doesn't voxelise water at all). A blue translucency here tinted everything near water
+// purple as the tint compounded cell-to-cell.
 voxelize: true
-translucency: vec3(0.5, 0.5, 1.0)
+translucency: vec3(1.0, 1.0, 1.0)
 
 
 block lava, flowing_lava:
@@ -65,7 +68,7 @@ weight: 100
 alias: BLOCK_ID_LAVA
 brightness: 1.15
 voxelize: true
-emission: vec3(1.0, 0.5, 0.0)
+emission: vec3(4, 1.6, 0)
 translucency: vec3(0.0, 0.0, 0.0)
 
 
@@ -73,6 +76,9 @@ block glass, glass_pane:
 weight: 100
 reflectiveness: 0.4
 specularness: 1.0
+// clear glass must let coloured light through (it was defaulting to a solid occluder)
+voxelize: true
+translucency: vec3(1.0, 1.0, 1.0)
 
 block tinted_glass:
 weight: 1
@@ -86,7 +92,7 @@ weight: 10
 reflectiveness: 0.4
 specularness: 1.0
 voxelize: true
-translucency: vec3(0.9, 0.9, 0.9)
+translucency: vec3(0.95, 0.95, 0.95)
 
 block light_gray_stained_glass, light_gray_stained_glass_pane:
 weight: 10
@@ -100,198 +106,108 @@ weight: 10
 reflectiveness: 0.4
 specularness: 1.0
 voxelize: true
-translucency: vec3(0.9, 0.9, 0.9)
+translucency: vec3(0.85, 0.85, 0.85)
 
 block black_stained_glass, black_stained_glass_pane:
 weight: 10
 reflectiveness: 0.4
 specularness: 1.0
 voxelize: true
-translucency: vec3(0.9, 0.9, 0.9)
+translucency: vec3(0.8, 0.8, 0.8)
 
 block brown_stained_glass, brown_stained_glass_pane:
 weight: 10
 reflectiveness: 0.4
 specularness: 1.0
 voxelize: true
-translucency: vec3(0.9, 0.9, 0.9)
+translucency: vec3(1.0, 0.75, 0.5)
 
 block red_stained_glass, red_stained_glass_pane:
 weight: 10
 reflectiveness: 0.4
 specularness: 1.0
 voxelize: true
-translucency: vec3(0.9, 0.9, 0.9)
+translucency: vec3(1.0, 0.15, 0.15)
 
 block orange_stained_glass, orange_stained_glass_pane:
 weight: 10
 reflectiveness: 0.4
 specularness: 1.0
 voxelize: true
-translucency: vec3(0.9, 0.9, 0.9)
+translucency: vec3(1.0, 0.4, 0.1)
 
 block yellow_stained_glass, yellow_stained_glass_pane:
 weight: 10
 reflectiveness: 0.4
 specularness: 1.0
 voxelize: true
-translucency: vec3(0.9, 0.9, 0.9)
+translucency: vec3(1.0, 1.0, 0.15)
 
 block lime_stained_glass, lime_stained_glass_pane:
 weight: 10
 reflectiveness: 0.4
 specularness: 1.0
 voxelize: true
-translucency: vec3(0.9, 0.9, 0.9)
+translucency: vec3(0.3, 1.0, 0.15)
 
 block green_stained_glass, green_stained_glass_pane:
 weight: 10
 reflectiveness: 0.4
 specularness: 1.0
 voxelize: true
-translucency: vec3(0.9, 0.9, 0.9)
+translucency: vec3(0.25, 0.9, 0.3)
 
 block cyan_stained_glass, cyan_stained_glass_pane:
 weight: 10
 reflectiveness: 0.4
 specularness: 1.0
 voxelize: true
-translucency: vec3(0.9, 0.9, 0.9)
+translucency: vec3(0.3, 0.85, 1.0)
 
 block light_blue_stained_glass, light_blue_stained_glass_pane:
 weight: 10
 reflectiveness: 0.4
 specularness: 1.0
 voxelize: true
-translucency: vec3(0.9, 0.9, 0.9)
+translucency: vec3(0.5, 0.7, 1.0)
 
 block blue_stained_glass, blue_stained_glass_pane:
 weight: 10
 reflectiveness: 0.4
 specularness: 1.0
 voxelize: true
-translucency: vec3(0.9, 0.9, 0.9)
+translucency: vec3(0.15, 0.25, 1.0)
 
 block purple_stained_glass, purple_stained_glass_pane:
 weight: 10
 reflectiveness: 0.4
 specularness: 1.0
 voxelize: true
-translucency: vec3(0.9, 0.9, 0.9)
+translucency: vec3(0.7, 0.3, 1.0)
 
 block magenta_stained_glass, magenta_stained_glass_pane:
 weight: 10
 reflectiveness: 0.4
 specularness: 1.0
 voxelize: true
-translucency: vec3(0.9, 0.9, 0.9)
+translucency: vec3(1.0, 0.2, 1.0)
 
 block pink_stained_glass, pink_stained_glass_pane:
 weight: 10
 reflectiveness: 0.4
 specularness: 1.0
 voxelize: true
-translucency: vec3(0.9, 0.9, 0.9)
+translucency: vec3(1.0, 0.45, 0.8)
 
 
 
-// candles
-
-block white_candle:lit=true:
+// Candles: pass-through, NOT emissive. Their wax shares the torch flame's hue so the glow
+// detect lit up unlit wax — removed it. Voxelised transparent so coloured light passes; the lit
+// flame stays bright via vanilla blocklight (like CR, which doesn't make candle wax emissive).
+block candle, white_candle, orange_candle, magenta_candle, light_blue_candle, yellow_candle, lime_candle, pink_candle, gray_candle, light_gray_candle, cyan_candle, purple_candle, blue_candle, brown_candle, green_candle, red_candle, black_candle:
 weight: 1
-specularness: 1.0
 voxelize: true
-emission: vec3(0.25, 0.25, 0.25)
-
-block light_gray_candle:lit=true:
-weight: 1
-specularness: 1.0
-voxelize: true
-emission: vec3(0.25, 0.25, 0.25)
-
-block gray_candle:lit=true:
-weight: 1
-specularness: 1.0
-voxelize: true
-emission: vec3(0.25, 0.25, 0.25)
-
-block black_candle:lit=true:
-weight: 1
-specularness: 1.0
-voxelize: true
-emission: vec3(0.25, 0.25, 0.25)
-
-block brown_candle:lit=true:
-weight: 1
-specularness: 1.0
-voxelize: true
-emission: vec3(0.25, 0.25, 0.25)
-
-block red_candle:lit=true:
-weight: 1
-specularness: 1.0
-voxelize: true
-emission: vec3(0.25, 0.25, 0.25)
-
-block orange_candle:lit=true:
-weight: 1
-specularness: 1.0
-voxelize: true
-emission: vec3(0.25, 0.25, 0.25)
-
-block yellow_candle:lit=true:
-weight: 1
-specularness: 1.0
-voxelize: true
-emission: vec3(0.25, 0.25, 0.25)
-
-block lime_candle:lit=true:
-weight: 1
-specularness: 1.0
-voxelize: true
-emission: vec3(0.25, 0.25, 0.25)
-
-block green_candle:lit=true:
-weight: 1
-specularness: 1.0
-voxelize: true
-emission: vec3(0.25, 0.25, 0.25)
-
-block cyan_candle:lit=true:
-weight: 1
-specularness: 1.0
-voxelize: true
-emission: vec3(0.25, 0.25, 0.25)
-
-block light_blue_candle:lit=true:
-weight: 1
-specularness: 1.0
-voxelize: true
-emission: vec3(0.25, 0.25, 0.25)
-
-block blue_candle:lit=true:
-weight: 1
-specularness: 1.0
-voxelize: true
-emission: vec3(0.25, 0.25, 0.25)
-
-block purple_candle:lit=true:
-weight: 1
-specularness: 1.0
-voxelize: true
-emission: vec3(0.25, 0.25, 0.25)
-
-block magenta_candle:lit=true:
-weight: 1
-specularness: 1.0
-voxelize: true
-emission: vec3(0.25, 0.25, 0.25)
-
-block pink_candle:lit=true:
-weight: 1
-specularness: 1.0
-voxelize: true
-emission: vec3(0.25, 0.25, 0.25)
+translucency: vec3(1.0, 1.0, 1.0)
 
 
 
@@ -381,68 +297,131 @@ emission: vec3(15.0 / 15.0)
 
 // classic blocklights
 
-block torch, wall_torch, galosphere:light_stand, galosphere:chandelier, supplementaries:sconce, supplementaries:sconce_lever:
+block torch, wall_torch:
 weight: 10
-brightness: 0.95
+brightness: 0.9
 shadow casting: foliage
-glow detect min: vec3( 0.0,   0.0, 100.0)
-glow detect max: vec3(60.0, 100.0, 100.0)
-glow amount: 0.3
+// Flame detect range widened to the actual torch_fire.png HSV (hue 17-45, sat 30-91, val 100).
+// The old min hue 33.6 / min sat 40.8 excluded most of the flame, so the emissive boost (and the
+// Light Source Brightness slider) barely touched it. Value kept high (98-100) so the wooden stick
+// (which has lower-value pixels) doesn't glow.
+glow detect min: vec3(15.0,  27.0,  98.0)
+glow detect max: vec3(48.0,  95.0, 100.0)
+glow amount: 0.4
 voxelize: true
-emission: vec3(1.0, 1.0, 0.9)
+emission: vec3(2.5, 2.05, 1.38)
 
-block lantern, copper_lantern, exposed_copper_lantern, weathered_copper_lantern, oxidized_copper_lantern, waxed_copper_lantern, waxed_exposed_copper_lantern, waxed_weathered_copper_lantern, waxed_oxidized_copper_lantern, enderscape:bulb_lantern, abundant_atmosphere:mud_lamp:
+block lantern, copper_lantern, exposed_copper_lantern, weathered_copper_lantern, oxidized_copper_lantern, waxed_copper_lantern, waxed_exposed_copper_lantern, waxed_weathered_copper_lantern, waxed_oxidized_copper_lantern:
 weight: 2
 brightness: 1.2
 glow detect min: vec3(33.6,  40.8, 100.0)
 glow detect max: vec3(60.0, 100.0, 100.0)
 glow amount: 0.2
 voxelize: true
-emission: vec3(1.0, 1.0, 0.9)
+emission: vec3(2.5, 2.5, 2.25)
 
-block campfire, furnace:lit=true:
+// lit=true so an extinguished campfire stops casting colored light.
+// No HSV glow detect here — flame and brown logs share the same hue, so HSV can't separate them.
+// Instead a dedicated campfire case in gbuffers_terrain.glsl ports CR's discriminator (red-green
+// gap + brightness): brown logs (r≈g, dim) never glow, only the orange flame does. Needs the alias.
+block campfire:lit=true, furnace:lit=true:
 weight: 1
-glow detect min: vec3(21.4,  31.3, 69.4)
-glow detect max: vec3(49.2, 100.0, 97.6)
-glow amount: 1.0
+alias: BLOCK_ID_CAMPFIRE
 voxelize: true
 emission: vec3(1.0, 1.0, 0.9)
 
 block jack_o_lantern:
 weight: 1
 voxelize: true
-emission: vec3(1.0, 1.0, 0.9)
+emission: vec3(2.5, 2.5, 2.25)
 
-block soul_torch, soul_wall_torch, soul_lantern, soul_campfire, galosphere:soul_light_stand, galosphere:soul_chandelier, supplementaries:sconce_soul:
+block soul_torch, soul_wall_torch, soul_lantern:
 weight: 3
 brightness: 0.9
 shadow casting: foliage
+alias: BLOCK_ID_SOUL_LANTERN
+// soul flame detect. Measured from the real texture: cyan flame = hue 181-182 sat 54-98 val 60-94;
+// the 2 hottest CORE texels are near-white hue 207 / sat 4 / val 100. So the window is hue 174..210,
+// sat >=3, val >=50. The soul-lantern FRAME is bluish too (hue ~222) but dark (val <=39), so val>=50
+// and hue<=210 both keep it excluded while the bright near-white core now glows.
+glow detect min: vec3(174.0, 3.0, 50.0)
+glow detect max: vec3(210.0, 100.0, 100.0)
+glow amount: 0.4
 voxelize: true
-emission: vec3(0.0, 0.15, 0.75)
+emission: vec3(0, 0.42, 2.1)
 
-block redstone_torch, redstone_wall_torch:
+// Soul campfire split out (it has brown logs that the cyan flame detect can't deal with the way
+// the torches/lantern do). Handled by a CR-style case in gbuffers_terrain.glsl: brown logs (r>b)
+// never glow, only the cyan soul flame (g>r) does. Needs the alias; no HSV glow detect here.
+block soul_campfire:lit=true:
+weight: 1
+alias: BLOCK_ID_SOUL_CAMPFIRE
+shadow casting: foliage
+voxelize: true
+emission: vec3(0, 0.42, 2.1)
+
+block redstone_torch:lit=true, redstone_wall_torch:lit=true:
+alias: BLOCK_ID_REDSTONE_TORCH
 weight: 5
 brightness: 0.9
 shadow casting: foliage
+// Glowing red head detected in gbuffers_terrain the CR way (r>0.65 & g~=b), shared with the redstone
+// DEVICES so heads glow identically everywhere (an HSV box was too tight and only lit the brightest tips).
 voxelize: true
-emission: vec3(0.0, 0.5, 0.0)
+emission: vec3(1.98, 0, 0)
+
+// Activated redstone wire (power 1-15): register the LIT wire as a faint red floodfill emitter so it
+// casts red coloured light on its surroundings (recoloured by CL_REDSTONE_HUE via the unique 0.05,0,0
+// emission value handled in shadowcomp). The wire's POWER isn't in the (grayscale) texture — MC tints
+// it red via the vertex colour — so the power-scaled SURFACE glow is done in gbuffers_terrain from
+// glcolor (see BLOCK_ID_REDSTONE_WIRE there). Unlit wire (power=0) is left out (no light).
+block redstone_wire:power=1, redstone_wire:power=2, redstone_wire:power=3, redstone_wire:power=4, redstone_wire:power=5, redstone_wire:power=6, redstone_wire:power=7, redstone_wire:power=8, redstone_wire:power=9, redstone_wire:power=10, redstone_wire:power=11, redstone_wire:power=12, redstone_wire:power=13, redstone_wire:power=14, redstone_wire:power=15:
+alias: BLOCK_ID_REDSTONE_WIRE
+weight: 5
+voxelize: true
+emission: vec3(0.05, 0, 0)
+
+// VANILLA redstone devices (repeater/comparator): simple quartz base + redstone torch, so they get the
+// FULL CR torch detection in gbuffers_terrain (incl. the b>0.99 white-hot torch centre). See
+// BLOCK_ID_REDSTONE_DEVICE. Faint red floodfill (0.05,0,0 -> recoloured in shadowcomp) so they cast light.
+block repeater, comparator:
+alias: BLOCK_ID_REDSTONE_DEVICE
+weight: 5
+voxelize: true
+emission: vec3(0.05, 0, 0)
+
+// CREATE & addon redstone devices. These carry white DISPLAYS / indicators (b>0.99) that are
+// indistinguishable by colour from a torch's white-hot centre, so they get the RED-parts-only detection
+// (maxDif, no b>0.99) — otherwise the displays lit up. Their torch centres stay unlit (unavoidable trade).
+block create:pulse_repeater, create:pulse_extender, create:pulse_timer, create:powered_latch, create:powered_toggle_latch, create:redstone_link, create:redstone_contact, create_connected:sequenced_pulse_generator, createaddition:redstone_relay, simulated:redstone_accumulator, simulated:redstone_inductor:
+alias: BLOCK_ID_CREATE_REDSTONE
+weight: 5
+voxelize: true
+emission: vec3(0.05, 0, 0)
+
+// [copycat light] copycat blocks of every mod (Create, Copycats+, Create Connected, Aeroworks). Not voxelised
+// by id: updateVoxelIds treats them like unknown blocks (solid if a full cube, else passes colour) and, when the
+// copied material is a light source (recognised by its texture + the block light around it), drops a coloured
+// emitter voxel for it so e.g. a glowstone copycat glows like glowstone.
+block aeroworks:copycat_control_desk, aeroworks:copycat_control_stand, copycats:copycat_base, copycats:copycat_beam, copycats:copycat_block, copycats:copycat_board, copycats:copycat_byte, copycats:copycat_byte_panel, copycats:copycat_cogwheel, copycats:copycat_corner_slice, copycats:copycat_door, copycats:copycat_fence, copycats:copycat_fence_gate, copycats:copycat_flat_pane, copycats:copycat_fluid_pipe, copycats:copycat_folding_door, copycats:copycat_ghost_block, copycats:copycat_glass_fluid_pipe, copycats:copycat_half_layer, copycats:copycat_half_panel, copycats:copycat_heavy_weighted_pressure_plate, copycats:copycat_iron_door, copycats:copycat_iron_trapdoor, copycats:copycat_ladder, copycats:copycat_large_cogwheel, copycats:copycat_layer, copycats:copycat_light_weighted_pressure_plate, copycats:copycat_pane, copycats:copycat_shaft, copycats:copycat_slab, copycats:copycat_slice, copycats:copycat_sliding_door, copycats:copycat_slope, copycats:copycat_slope_layer, copycats:copycat_stacked_half_layer, copycats:copycat_stairs, copycats:copycat_stone_button, copycats:copycat_stone_pressure_plate, copycats:copycat_trapdoor, copycats:copycat_vertical_half_layer, copycats:copycat_vertical_slice, copycats:copycat_vertical_slope, copycats:copycat_vertical_stairs, copycats:copycat_vertical_step, copycats:copycat_wall, copycats:copycat_wooden_button, copycats:copycat_wooden_pressure_plate, copycats:wrapped_copycat, create:copycat_bars, create:copycat_base, create:copycat_panel, create:copycat_step, create_connected:copycat_beam, create_connected:copycat_block, create_connected:copycat_board, create_connected:copycat_fence, create_connected:copycat_fence_gate, create_connected:copycat_slab, create_connected:copycat_stairs, create_connected:copycat_vertical_step, create_connected:copycat_wall, create_connected:wrapped_copycat_fence, create_connected:wrapped_copycat_fence_gate, create_connected:wrapped_copycat_stairs, create_connected:wrapped_copycat_wall:
+alias: BLOCK_ID_COPYCAT
+weight: 5
 
 block sea_lantern:
 weight: 1
-brightness: 1.25
 voxelize: true
-emission: vec3(0.9, 1.0, 1.0)
+emission: vec3(2.7, 3, 3)
 
 block beacon:
 weight: 1
 reflectiveness: 0.4
 voxelize: true
-emission: vec3(1.0, 1.0, 1.0)
+emission: vec3(3.5, 3.5, 3.5)
 
 block redstone_lamp:lit=true, copper_bulb:lit=true, exposed_copper_bulb:lit=true, weathered_copper_bulb:lit=true, oxidized_copper_bulb:lit=true, waxed_copper_bulb:lit=true, waxed_exposed_copper_bulb:lit=true, waxed_weathered_copper_bulb:lit=true, waxed_oxidized_copper_bulb:lit=true:
 weight: 1
 voxelize: true
-emission: vec3(1.0, 1.0, 0.9)
+emission: vec3(3, 3, 2.7)
 
 block lava_cauldron:
 weight: 1
@@ -461,7 +440,8 @@ block soul_fire:
 weight: 5
 shadow casting: never
 voxelize: true
-emission: vec3(0.0, 0.7, 0.9)
+// match the soul torch/lantern hue (deep blue) — was cyan/teal and read as a different colour
+emission: vec3(0, 0.42, 2.1)
 
 
 
@@ -469,6 +449,7 @@ emission: vec3(0.0, 0.7, 0.9)
 
 block glow_lichen:
 weight: 5
+alias: BLOCK_ID_GLOW_LICHEN
 glow detect min: vec3(60.0, 19.0, 67.6)
 glow detect max: vec3(63.0, 21.0, 69.6)
 glow amount: 0.5
@@ -483,37 +464,33 @@ glow amount: 1.1
 voxelize: true
 emission: vec3(0.7, 0.5, 0.3)
 
-block small_amethyst_bud, biomesoplenty:small_rose_quartz_bud:
+block small_amethyst_bud:
 weight: 1
-shadow casting: foliage
 reflectiveness: 1.0
 specularness: 0.5
 voxelize: true
-emission: vec3(0.1, 0.1, 0.1)
+emission: vec3(0.15, 0.08, 0.25)
 
-block medium_amethyst_bud, biomesoplenty:medium_rose_quartz_bud:
+block medium_amethyst_bud:
 weight: 1
-shadow casting: foliage
 reflectiveness: 1.0
 specularness: 0.5
 voxelize: true
-emission: vec3(0.2, 0.2, 0.2)
+emission: vec3(0.3, 0.17, 0.5)
 
-block large_amethyst_bud, biomesoplenty:large_rose_quartz_bud:
+block large_amethyst_bud:
 weight: 1
-shadow casting: foliage
 reflectiveness: 1.0
 specularness: 0.5
 voxelize: true
-emission: vec3(0.3, 0.3, 0.3)
+emission: vec3(0.45, 0.26, 0.7)
 
-block amethyst_cluster, biomesoplenty:rose_quartz_cluster, galosphere:glinted_amethyst_cluster, galosphere:allurite_cluster, galosphere:glinted_allurite_cluster, galosphere:lumiere_cluster, galosphere:glinted_lumiere_cluster:
+block amethyst_cluster:
 weight: 1
-shadow casting: foliage
 reflectiveness: 1.0
 specularness: 0.5
 voxelize: true
-emission: vec3(0.4, 0.4, 0.4)
+emission: vec3(1.32, 0.77, 2.09)
 
 block amethyst_block, budding_amethyst:
 weight: 5
@@ -532,19 +509,19 @@ emission: vec3(0.2, 0.4, 0.3)
 block ochre_froglight:
 weight: 1
 voxelize: true
-emission: vec3(1.0, 1.0, 1.0)
+emission: vec3(3.5, 2.52, 1.05)
 brightness: 0.9
 
 block verdant_froglight:
 weight: 1
 voxelize: true
-emission: vec3(1.0, 1.0, 1.0)
+emission: vec3(1.75, 3.15, 1.57)
 brightness: 0.9
 
 block pearlescent_froglight:
 weight: 1
 voxelize: true
-emission: vec3(1.0, 1.0, 1.0)
+emission: vec3(3.5, 2.1, 2.98)
 brightness: 0.9
 
 block conduit:
@@ -552,15 +529,31 @@ weight: 1
 voxelize: true
 emission: vec3(0.4, 0.5, 0.5)
 
-block sculk, sculk_vein, sculk_shrieker, sculk_sensor:sculk_sensor_phase=inactive, calibrated_sculk_sensor:sculk_sensor_phase=inactive, sculk_sensor:sculk_sensor_phase=cooldown, calibrated_sculk_sensor:sculk_sensor_phase=cooldown:
+block sculk_catalyst:
 weight: 2
-alias: BLOCK_ID_SCULK_GROUP_1
-
-block sculk_sensor:sculk_sensor_phase=active, calibrated_sculk_sensor:sculk_sensor_phase=active, sculk_catalyst:
-weight: 1
-alias: BLOCK_ID_SCULK_GROUP_2
 voxelize: true
 emission: vec3(0.3, 0.3, 0.3)
+
+// Sculk sensors/shriekers are low-profile partial blocks — voxelise them as transparent (all
+// phases) so coloured light passes through and they get lit, instead of the normal default
+// treating them as solid occluders (which left them unlit and blocking light).
+block sculk_sensor:sculk_sensor_phase=inactive, sculk_sensor:sculk_sensor_phase=cooldown, calibrated_sculk_sensor:sculk_sensor_phase=inactive, calibrated_sculk_sensor:sculk_sensor_phase=cooldown:
+weight: 2
+voxelize: true
+translucency: vec3(1.0, 1.0, 1.0)
+
+// Sculk shrieker: keep it light-passing (translucent, like the sensors) AND make its bright cyan inner
+// "soul" texels glow FULLBRIGHT (like CR). The inner cyan lives in the texture (not vertex-tinted), so a
+// glow-detect HSV box catches it: cyan hue ~160-210, mid-high saturation, mid-high brightness — the dark
+// outer sculk (low value) stays excluded.
+// Sculk shrieker: light-passing (translucent) + its inner "souls" glow. A plain HSV box only caught
+// stray texels; the souls are detected in gbuffers_terrain the way Complementary does it (green-dominant
+// texels + the central soul hole) — see BLOCK_ID_SCULK_SHRIEKER there.
+block sculk_shrieker:
+alias: BLOCK_ID_SCULK_SHRIEKER
+weight: 2
+voxelize: true
+translucency: vec3(1.0, 1.0, 1.0)
 
 
 
@@ -569,15 +562,15 @@ emission: vec3(0.3, 0.3, 0.3)
 block glowstone:
 weight: 25
 reflectiveness: 1.0
-brightness: 1.1
+brightness: 1.25
 voxelize: true
-emission: vec3(1.0, 0.9, 0.3)
+emission: vec3(3.5, 3.15, 1.05)
 
 block shroomlight:
 weight: 10
 brightness: 0.9
 voxelize: true
-emission: vec3(1.0, 0.9, 0.5)
+emission: vec3(2.8, 2.52, 1.4)
 
 block magma_block:
 weight: 20
@@ -585,11 +578,18 @@ brightness: 0.7
 glow detect min: vec3(  0.0, 64.5, 79.2)
 glow detect max: vec3(360.0, 97.0, 98.4)
 glow amount: 1.0
+voxelize: true
+emission: vec3(1.0, 0.3, 0.08)
+
+block crying_obsidian:
+weight: 2
+voxelize: true
+emission: vec3(0.5, 0.22, 0.9)
 
 block end_rod, end_crystal:
 weight: 1
 voxelize: true
-emission: vec3(0.9, 0.95, 1.0)
+emission: vec3(2.7, 2.85, 3)
 
 
 
@@ -606,6 +606,16 @@ weight: 1
 glow detect min: vec3(18.0, 24.8, 53.3)
 glow detect max: vec3(56.0, 37.5, 88.6)
 glow amount: GLOWING_ORES_STRENGTH * GLOWING_IRON_ORE_STRENGTH
+
+block create:zinc_ore, create:deepslate_zinc_ore:
+alias: BLOCK_ID_ZINC_ORE
+weight: 1
+
+// Expanded Delight salt ore — glows via a baked mask (salt_glow.png / colortex14), handled in
+// gbuffers_terrain.glsl like zinc. Needs the alias.
+block expandeddelight:salt_ore, expandeddelight:deepslate_salt_ore:
+alias: BLOCK_ID_SALT_ORE
+weight: 1
 
 block copper_ore, deepslate_copper_ore:
 weight: 1
@@ -691,13 +701,13 @@ brightness: 0.9
 
 // natural blocks
 
-block sugar_cane, gardens_of_the_dead:whistlecane:
+block sugar_cane:
 weight: 1
 shadow casting: foliage
 waviness: 1
 brightness: 0.9
 
-block bamboo, bamboo_sapling, abundant_atmosphere:red_bamboo, abundant_atmosphere:red_bamboo_sapling:
+block bamboo, bamboo_sapling:
 weight: 10
 waviness: 1
 brightness: 1.15
@@ -706,28 +716,101 @@ block pumpkin:
 weight: 1
 alias: BLOCK_ID_PUMPKIN
 
-block oak_leaves, spruce_leaves, birch_leaves, jungle_leaves, acacia_leaves, dark_oak_leaves, mangrove_leaves, azalea_leaves, flowering_azalea_leaves, cherry_leaves, pale_oak_leaves, biomesoplenty:flowering_oak_leaves, biomesoplenty:cypress_leaves, biomesoplenty:snowblossom_leaves, biomesoplenty:origin_oak_leaves, biomesoplenty:pine_leaves, biomesoplenty:red_maple_leaves, biomesoplenty:orange_maple_leaves, biomesoplenty:yellow_maple_leaves, biomesoplenty:redwood_leaves, biomesoplenty:mahogany_leaves, biomesoplenty:jacaranda_leaves, biomesoplenty:palm_leaves, biomesoplenty:willow_leaves, biomesoplenty:dead_leaves, biomesoplenty:magic_leaves, biomesoplenty:umbran_leaves, biomesoplenty:hellbark_leaves, biomesoplenty:empyreal_leaves, abundant_atmosphere:ashroot_leaves, abundant_atmosphere:gourdrot_leaves, galosphere:opal_leaves, enderscape:veiled_leaves, newworld:fir_leaves, nethers_exoticism:jaboticaba_leaves, nethers_exoticism:kiwano_leaves, nethers_exoticism:ramboutan_leaves:
+block oak_leaves, spruce_leaves, birch_leaves, jungle_leaves, acacia_leaves, dark_oak_leaves, mangrove_leaves, azalea_leaves, flowering_azalea_leaves, cherry_leaves, pale_oak_leaves:
 weight: 2000
-alias: BLOCK_ID_LEAVES
 waviness: 3
 specularness: 0.8
+// leaves are full-cube shaped but not opaque — voxelise them as translucent so coloured light
+// filters through the canopy (dimmed a little) instead of being blocked by the solid default.
+voxelize: true
+translucency: vec3(0.72, 0.72, 0.72)
 
-block vine, biomesoplenty:willow_vine:
+block vine, sculk_vein:
 weight: 2
 waviness: 2
 brightness: 1.2
 specularness: 0.75
+// voxelise as fully transparent so these flat overlays don't get treated as solid occluders
+// (their wall-aligned normal would otherwise give them the solid voxel id) and block coloured light
+voxelize: true
+translucency: vec3(1.0, 1.0, 1.0)
 
-block pale_hanging_moss, biomesoplenty:spanish_moss:
+
+// ==== non-full / partial blocks ====
+// Stairs, slabs, walls, fences, bars, etc. are not full cubes, but their axis-aligned faces make
+// the voxeliser's default classify them as solid occluders — which wrongly blocks coloured light.
+// Register them as fully transparent voxels so light passes through (CR treats all non-full-cube
+// blocks as non-occluding). Unknown ids are harmless (the game ignores them), so the lists are
+// generous. A whole entry shares one voxel id, so this is cheap.
+
+block oak_stairs, spruce_stairs, birch_stairs, jungle_stairs, acacia_stairs, dark_oak_stairs, mangrove_stairs, cherry_stairs, pale_oak_stairs, bamboo_stairs, bamboo_mosaic_stairs, crimson_stairs, warped_stairs, stone_stairs, cobblestone_stairs, mossy_cobblestone_stairs, smooth_stone_stairs, stone_brick_stairs, mossy_stone_brick_stairs, granite_stairs, andesite_stairs, cobbled_deepslate_stairs, deepslate_brick_stairs, deepslate_tile_stairs, brick_stairs, mud_brick_stairs, red_sandstone_stairs, smooth_red_sandstone_stairs, prismarine_stairs, dark_prismarine_stairs, nether_brick_stairs, red_nether_brick_stairs, purpur_stairs, end_stone_brick_stairs, blackstone_stairs, polished_blackstone_stairs, polished_blackstone_brick_stairs, exposed_cut_copper_stairs, weathered_cut_copper_stairs, oxidized_cut_copper_stairs, waxed_exposed_cut_copper_stairs, waxed_weathered_cut_copper_stairs, waxed_oxidized_cut_copper_stairs, tuff_stairs, polished_tuff_stairs, tuff_brick_stairs:
+weight: 50
+voxelize: true
+translucency: vec3(1.0, 1.0, 1.0)
+
+block oak_slab, spruce_slab, birch_slab, jungle_slab, acacia_slab, dark_oak_slab, mangrove_slab, cherry_slab, pale_oak_slab, bamboo_slab, bamboo_mosaic_slab, crimson_slab, warped_slab, stone_slab, smooth_stone_slab, cobblestone_slab, mossy_cobblestone_slab, stone_brick_slab, mossy_stone_brick_slab, petrified_oak_slab, granite_slab, andesite_slab, cobbled_deepslate_slab, deepslate_brick_slab, deepslate_tile_slab, brick_slab, mud_brick_slab, red_sandstone_slab, cut_red_sandstone_slab, smooth_red_sandstone_slab, prismarine_slab, dark_prismarine_slab, nether_brick_slab, red_nether_brick_slab, purpur_slab, end_stone_brick_slab, blackstone_slab, polished_blackstone_slab, polished_blackstone_brick_slab, exposed_cut_copper_slab, weathered_cut_copper_slab, oxidized_cut_copper_slab, waxed_exposed_cut_copper_slab, waxed_weathered_cut_copper_slab, waxed_oxidized_cut_copper_slab, tuff_slab, polished_tuff_slab, tuff_brick_slab:
+weight: 50
+voxelize: true
+translucency: vec3(1.0, 1.0, 1.0)
+
+block cobblestone_wall, mossy_cobblestone_wall, stone_brick_wall, mossy_stone_brick_wall, granite_wall, andesite_wall, cobbled_deepslate_wall, polished_deepslate_wall, deepslate_brick_wall, deepslate_tile_wall, brick_wall, mud_brick_wall, red_sandstone_wall, prismarine_wall, nether_brick_wall, red_nether_brick_wall, end_stone_brick_wall, blackstone_wall, polished_blackstone_wall, polished_blackstone_brick_wall, tuff_wall, polished_tuff_wall, tuff_brick_wall:
+weight: 20
+voxelize: true
+translucency: vec3(1.0, 1.0, 1.0)
+
+block oak_fence, spruce_fence, birch_fence, jungle_fence, acacia_fence, dark_oak_fence, mangrove_fence, cherry_fence, pale_oak_fence, bamboo_fence, crimson_fence, warped_fence, nether_brick_fence, oak_fence_gate, spruce_fence_gate, birch_fence_gate, jungle_fence_gate, acacia_fence_gate, dark_oak_fence_gate, mangrove_fence_gate, cherry_fence_gate, pale_oak_fence_gate, bamboo_fence_gate, crimson_fence_gate, warped_fence_gate:
+weight: 20
+voxelize: true
+translucency: vec3(1.0, 1.0, 1.0)
+
+block iron_bars, chain, ladder, scaffolding, oak_trapdoor, spruce_trapdoor, birch_trapdoor, jungle_trapdoor, acacia_trapdoor, dark_oak_trapdoor, mangrove_trapdoor, cherry_trapdoor, pale_oak_trapdoor, bamboo_trapdoor, crimson_trapdoor, warped_trapdoor, copper_trapdoor, exposed_copper_trapdoor, weathered_copper_trapdoor, oxidized_copper_trapdoor, rail, powered_rail, detector_rail, activator_rail, grindstone, stonecutter, lectern, bell, hopper, cauldron, water_cauldron, powder_snow_cauldron, flower_pot:
+weight: 10
+voxelize: true
+translucency: vec3(1.0, 1.0, 1.0)
+
+// more partial blocks that must let colored light through (doors, signs, thin/small shapes)
+block oak_door, spruce_door, birch_door, jungle_door, acacia_door, dark_oak_door, mangrove_door, cherry_door, pale_oak_door, bamboo_door, crimson_door, warped_door, copper_door, exposed_copper_door, weathered_copper_door, oxidized_copper_door:
+weight: 10
+voxelize: true
+translucency: vec3(1.0, 1.0, 1.0)
+
+block oak_sign, spruce_sign, birch_sign, jungle_sign, acacia_sign, dark_oak_sign, mangrove_sign, cherry_sign, pale_oak_sign, bamboo_sign, crimson_sign, warped_sign, oak_wall_sign, spruce_wall_sign, birch_wall_sign, jungle_wall_sign, acacia_wall_sign, dark_oak_wall_sign, mangrove_wall_sign, cherry_wall_sign, pale_oak_wall_sign, bamboo_wall_sign, crimson_wall_sign, warped_wall_sign, oak_hanging_sign, spruce_hanging_sign, birch_hanging_sign, jungle_hanging_sign, acacia_hanging_sign, dark_oak_hanging_sign, mangrove_hanging_sign, cherry_hanging_sign, pale_oak_hanging_sign, bamboo_hanging_sign, crimson_hanging_sign, warped_hanging_sign:
+weight: 5
+voxelize: true
+translucency: vec3(1.0, 1.0, 1.0)
+
+block white_banner, orange_banner, magenta_banner, light_blue_banner, yellow_banner, lime_banner, pink_banner, gray_banner, light_gray_banner, cyan_banner, purple_banner, blue_banner, brown_banner, green_banner, red_banner, black_banner, white_wall_banner, orange_wall_banner, magenta_wall_banner, light_blue_wall_banner, yellow_wall_banner, lime_wall_banner, pink_wall_banner, gray_wall_banner, light_gray_wall_banner, cyan_wall_banner, purple_wall_banner, blue_wall_banner, brown_wall_banner, green_wall_banner, red_wall_banner, black_wall_banner:
+weight: 3
+voxelize: true
+translucency: vec3(1.0, 1.0, 1.0)
+
+block snow, oak_button, spruce_button, birch_button, jungle_button, acacia_button, dark_oak_button, mangrove_button, cherry_button, pale_oak_button, bamboo_button, crimson_button, warped_button, stone_button, polished_blackstone_button, oak_pressure_plate, spruce_pressure_plate, birch_pressure_plate, jungle_pressure_plate, acacia_pressure_plate, dark_oak_pressure_plate, mangrove_pressure_plate, cherry_pressure_plate, pale_oak_pressure_plate, bamboo_pressure_plate, crimson_pressure_plate, warped_pressure_plate, stone_pressure_plate, polished_blackstone_pressure_plate, small_dripleaf, big_dripleaf, big_dripleaf_stem, azalea, flowering_azalea, anvil, chipped_anvil, damaged_anvil, brewing_stand, composter, enchanting_table:
+weight: 5
+voxelize: true
+translucency: vec3(1.0, 1.0, 1.0)
+
+// common Farmers Delight / Expanded Delight partial blocks: thin boards/pans must pass colored light
+block farmersdelight:cutting_board, farmersdelight:skillet, farmersdelight:canvas_rug, farmersdelight:rope, farmersdelight:safety_net, expandeddelight:cutting_board:
+weight: 3
+voxelize: true
+translucency: vec3(1.0, 1.0, 1.0)
+
+block pale_hanging_moss:
 weight: 1
 waviness: 3
 specularness: 0.5
 
-block weeping_vines, twisting_vines, weeping_vines_plant, twisting_vines_plant, enderscape:blinklight_vines_body, enderscape:blinklight_vines_head:
+block weeping_vines, twisting_vines, weeping_vines_plant, twisting_vines_plant:
 weight: 2
 waviness: 3
 shadow casting: foliage
 specularness: 0.75
+
+// Nether cross-plants: flag as foliage so they get upward normals and stop rendering too dark
+// (same fix as overworld crops/cross-plants).
+block nether_wart, nether_sprouts:
+weight: 1
+shadow casting: foliage
 
 block tube_coral, brain_coral, bubble_coral, fire_coral, horn_coral, tube_coral_fan, brain_coral_fan, bubble_coral_fan, fire_coral_fan, horn_coral_fan, dead_tube_coral, dead_brain_coral, dead_bubble_coral, dead_fire_coral, dead_horn_coral, dead_tube_coral_fan, dead_brain_coral_fan, dead_bubble_coral_fan, dead_fire_coral_fan, dead_horn_coral_fan:
 weight: 5
@@ -735,85 +818,97 @@ shadow casting: foliage
 waviness: 2
 specularness: 0.5
 
-block grass, short_grass, fern, bush, crimson_roots, warped_roots, tall_grass:half=lower, short_dry_grass, large_fern:half=lower, firefly_bush, sweet_berry_bush, biomesoplenty:sprout, biomesoplenty:high_grass, biomesoplenty:bramble_leaves, abundant_atmosphere:cave_sprouts, abundant_atmosphere:rust_moss_sprouts, abundant_atmosphere:short_cave_sprouts, abundant_atmosphere:pink_water_lotus:half=lower, abundant_atmosphere:violet_water_lotus:half=lower, enderscape:veiled_vines, newworld:moss_sprouts, gardens_of_the_dead:soulblight_sprouts, gardens_of_the_dead:blistercrown, gardens_of_the_dead:tall_blistercrown:half=lower, gardens_of_the_dead:soul_spore, gardens_of_the_dead:glowing_soul_spore:
+block grass, short_grass, fern, bush, crimson_roots, warped_roots, tall_grass:half=lower, short_dry_grass, large_fern:half=lower, firefly_bush, sweet_berry_bush:
 weight: 50
 shadow casting: foliage
 do bottom waving: false
 waviness: 3
 specularness: 0.2
 
-block tall_grass:half=upper, large_fern:half=upper, abundant_atmosphere:pink_water_lotus:half=upper, abundant_atmosphere:violet_water_lotus:half=upper, gardens_of_the_dead:tall_blistercrown:half=upper:
+block tall_grass:half=upper, large_fern:half=upper:
 weight: 10
 shadow casting: foliage
 waviness: 3
 specularness: 0.2
 
-block leaf_litter, abundant_atmosphere:moss_clump, abundant_atmosphere:rust_moss_clump, abundant_atmosphere:leaf_pile, galosphere:palladium_lattice:
+block leaf_litter:
 weight: 20
 shadow casting: foliage
+// thin floor decal (segment_amount 1..4, any facing) — voxelise transparent so coloured light passes
+// through it instead of being blocked, like carpets. (from the Vanilla Backport mod)
+voxelize: true
+translucency: vec3(1.0, 1.0, 1.0)
 
-block oak_sapling, spruce_sapling, birch_sapling, jungle_sapling, acacia_sapling, dark_oak_sapling, mangrove_propagule, cherry_sapling, pale_oak_sapling, biomesoplenty:flowering_oak_sapling, biomesoplenty:cypress_sapling, biomesoplenty:snowblossom_sapling, biomesoplenty:origin_oak_sapling, biomesoplenty:pine_sapling, biomesoplenty:red_maple_sapling, biomesoplenty:orange_maple_sapling, biomesoplenty:yellow_maple_sapling, biomesoplenty:redwood_sapling, biomesoplenty:mahogany_sapling, biomesoplenty:jacaranda_sapling, biomesoplenty:palm_sapling, biomesoplenty:willow_sapling, biomesoplenty:magic_sapling, biomesoplenty:umbran_sapling, biomesoplenty:hellbark_sapling, biomesoplenty:empyreal_sapling, abundant_atmosphere:ashroot_sapling, galosphere:opal_sapling, enderscape:alluring_magnia_sprout, enderscape:repulsive_magnia_sprout, enderscape:veiled_sapling, newworld:fir_sapling, nethers_exoticism:jaboticaba_sapling, nethers_exoticism:kiwano_sapling, nethers_exoticism:ramboutan_sapling, nethers_exoticism:pitaya_sapling:
+block oak_sapling, spruce_sapling, birch_sapling, jungle_sapling, acacia_sapling, dark_oak_sapling, mangrove_propagule, cherry_sapling, pale_oak_sapling:
 weight: 1
-brightness: 0.95
 shadow casting: foliage
 do bottom waving: false
 waviness: 2
 
-block dandelion, poppy, blue_orchid, allium, azure_bluet, red_tulip, orange_tulip, white_tulip, pink_tulip, oxeye_daisy, cornflower, lily_of_the_valley, torchflower, cactus_flower, closed_eyeblossom, open_eyeblossom, pink_petals, wildflowers, biomesoplenty:flower_bud, biomesoplenty:origin_dandelion, biomesoplenty:origin_rose, biomesoplenty:marigold, biomesoplenty:violet, biomesoplenty:lavender, biomesoplenty:white_lavender, biomesoplenty:orange_cosmos, biomesoplenty:pink_daffodil, biomesoplenty:pink_hibiscus, biomesoplenty:glowflower, biomesoplenty:wilted_lily, biomesoplenty:burning_blossom, biomesoplenty:endbloom, biomesoplenty:waterlily, abundant_atmosphere:catsbane, abundant_atmosphere:saffron_bushbuds, abundant_atmosphere:cherry_bushbuds, abundant_atmosphere:umbra_bushbuds, abundant_atmosphere:midnight_lily, supplementaries:wild_flax, galosphere:bowl_lichen, galosphere:lichen_roots, enderscape:murublight_chanterelle, enderscape:celestial_chanterelle, enderscape:corrupt_growth, enderscape:bulb_flower, enderscape:celestial_growth, enderscape:wisp_flower, enderscape:wisp_growth, enderscape:wisp_sprouts, enderscape:chorus_sprouts, enderscape:dry_end_growth:
+block dandelion, poppy, blue_orchid, allium, azure_bluet, red_tulip, orange_tulip, white_tulip, pink_tulip, oxeye_daisy, cornflower, lily_of_the_valley, torchflower, cactus_flower, closed_eyeblossom, open_eyeblossom, pink_petals, wildflowers:
 weight: 3
+brightness: 0.8
 shadow casting: foliage
 do bottom waving: false
 brightness: 0.95
 waviness: 2
 
-block potatoes, carrots, beetroots, wheat, farmersdelight:wild_cabbages, farmersdelight:wild_onions, farmersdelight:wild_tomatoes, farmersdelight:wild_carrots, farmersdelight:wild_potatoes, farmersdelight:wild_beetroots, farmersdelight:tomatoes, farmersdelight:cabbages, farmersdelight:onions:
+block potatoes, carrots, beetroots, wheat:
 weight: 5
 shadow casting: foliage
 do bottom waving: false
 waviness: 2
 
-block farmersdelight:wild_rice:half=upper:
+block rose_bush:half=upper, peony:half=upper, lilac:half=upper, sunflower:half=upper, pitcher_plant:half=upper, pitcher_crop:half=upper:
 weight: 1
-shadow casting: foliage
-waviness: 2
-
-block farmersdelight:wild_rice:half=lower:
-weight: 1
-shadow casting: foliage
-do bottom waving: false
-waviness: 2
-
-block rose_bush:half=upper, peony:half=upper, lilac:half=upper, sunflower:half=upper, pitcher_plant:half=upper, pitcher_crop:half=upper, biomesoplenty:tall_lavender:half=upper, biomesoplenty:tall_white_lavender:half=upper, biomesoplenty:blue_hydrangea:half=upper, biomesoplenty:goldenrod:half=upper, biomesoplenty:icy_iris:half=upper, biomesoplenty:barley:half=upper, biomesoplenty:sea_oats:half=upper, biomesoplenty:cattail:half=upper, biomesoplenty:reed:half=upper, biomesoplenty:watergrass:half=upper, overweight_farming:allium_bush:half=upper:
-weight: 1
-brightness: 0.85
 shadow casting: foliage
 waviness: 3
 specularness: 0.5
 
-block rose_bush:half=lower, peony:half=lower, lilac:half=lower, sunflower:half=lower, pitcher_plant:half=lower, pitcher_crop:half=lower, biomesoplenty:tall_lavender:half=lower, biomesoplenty:tall_white_lavender:half=lower, biomesoplenty:blue_hydrangea:half=lower, biomesoplenty:goldenrod:half=lower, biomesoplenty:icy_iris:half=lower, biomesoplenty:barley:half=lower, biomesoplenty:sea_oats:half=lower, biomesoplenty:cattail:half=lower, biomesoplenty:reed:half=lower, biomesoplenty:watergrass:half=lower, overweight_farming:allium_bush:half=lower:
+block rose_bush:half=lower, peony:half=lower, lilac:half=lower, sunflower:half=lower, pitcher_plant:half=lower, pitcher_crop:half=lower:
 weight: 1
-brightness: 0.85
 shadow casting: foliage
 do bottom waving: false
 waviness: 3
 specularness: 0.5
 
-block red_mushrooms, brown_mushrooms, red_mushroom, brown_mushroom, crimson_fungus, warped_fungus, biomesoplenty:toadstool, biomesoplenty:glowshroom, farmersdelight:red_mushroom_colony, farmersdelight:brown_mushroom_colony, abundant_atmosphere:poreshroom, abundant_atmosphere:puffball_mushroom, supplementaries:bamboo_spikes, gardens_of_the_dead:soulblight_fungus, nethers_exoticism:bouddha_s_hand_sapling:
+block red_mushrooms, brown_mushrooms, red_mushroom, brown_mushroom, crimson_fungus, warped_fungus:
 weight: 2
+shadow casting: foliage
+
+// ======== modded plants (Farmers Delight + Expanded Delight) ========
+// Registered as foliage so they receive upward-facing normals (via OVERRIDE_FOLIAGE_NORMALS)
+// and proper foliage shading. Without this their cross/crop geometry normals point sideways,
+// so directional lighting renders them far too dark.
+
+block farmersdelight:cabbages, farmersdelight:tomatoes, farmersdelight:budding_tomatoes, farmersdelight:onions, farmersdelight:rice, farmersdelight:rice_panicles, expandeddelight:asparagus_crop, expandeddelight:chili_pepper_crop, expandeddelight:peanut_crop, expandeddelight:sweet_potatoes_crop:
+weight: 5
+shadow casting: foliage
+do bottom waving: false
+waviness: 2
+
+block farmersdelight:sandy_shrub, farmersdelight:wild_beetroots, farmersdelight:wild_cabbages, farmersdelight:wild_carrots, farmersdelight:wild_onions, farmersdelight:wild_potatoes, farmersdelight:wild_rice, farmersdelight:wild_tomatoes, expandeddelight:wild_asparagus, expandeddelight:wild_chili_pepper, expandeddelight:wild_peanuts, expandeddelight:wild_sweet_potatoes:
+weight: 2
+shadow casting: foliage
+do bottom waving: false
+waviness: 3
+
+block farmersdelight:brown_mushroom_colony, farmersdelight:red_mushroom_colony:
+weight: 1
 shadow casting: foliage
 
 block cobweb:
 weight: 2
 shadow casting: foliage
 
-block dead_bush, tall_dry_grass, biomesoplenty:dead_sapling, biomesoplenty:dune_grass, biomesoplenty:desert_grass, biomesoplenty:dead_grass, biomesoplenty:tundra_shrub, biomesoplenty:enderphyte, biomesoplenty:lumaloop, biomesoplenty:tiny_cactus:
+block dead_bush, tall_dry_grass:
 weight: 1
 brightness: 0.9
 shadow casting: foliage
 do bottom waving: false
 waviness: 2
 
-block sand, suspicious_sand, sandstone, sandstone_stairs, sandstone_slab, sandstone_wall, chiseled_sandstone, smooth_sandstone, smooth_sandstone_stairs, smooth_sandstone_slab, cut_sandstone, cut_sandstone_slab:
+block sand, suspicious_sand, sandstone, chiseled_sandstone, smooth_sandstone, cut_sandstone:
 weight: 100
 specularness: 0.2
 
@@ -821,28 +916,32 @@ block red_sand:
 weight: 3
 specularness: 0.2
 
-block diorite, diorite_stairs, diorite_slab, diorite_wall:
+block diorite:
 weight: 2
 specularness: 0.25
 
-block polished_granite, polished_granite_stairs, polished_granite_slab, polished_diorite, polished_diorite_stairs, polished_diorite_slab, polished_andesite, polished_andesite_stairs, polished_andesite_slab, polished_deepslate, polished_deepslate_stairs, polished_deepslate_slab:
+block polished_granite, polished_diorite, polished_andesite, polished_deepslate:
 weight: 3
 reflectiveness: 0.25
 specularness: 0.6
 
-block pointed_dripstone, galosphere:pink_salt_straw, galosphere:pink_salt_cluster:
+block pointed_dripstone:
 weight: 3
 shadow casting: foliage
 brightness: 0.9
+// thin spike (all thickness/direction states), not a full cube — voxelise transparent so coloured
+// light passes through instead of being blocked. (dripstone_block stays a solid full-cube occluder.)
+voxelize: true
+translucency: vec3(1.0, 1.0, 1.0)
 
-block prismarine_bricks, prismarine_brick_stairs, prismarine_brick_slab:
+block prismarine_bricks:
 weight: 2
 reflectiveness: 0.9
 specularness: 0.4
 
 block netherrack:
 weight: 1000
-reflectiveness: 0.15
+reflectiveness: 0.2
 
 block warped_stem:
 weight: 3
@@ -860,7 +959,7 @@ glow amount: GLOWING_STEMS_STRENGTH
 
 // valuables:
 
-block iron_block, iron_door, iron_trapdoor, heavy_weighted_pressure_plate:
+block iron_block, heavy_weighted_pressure_plate:
 weight: 1
 reflectiveness: 0.4
 specularness: 0.3
@@ -875,7 +974,7 @@ weight: 1
 reflectiveness: 0.4
 specularness: 0.3
 
-block copper_block, cut_copper, cut_copper_stairs, cut_copper_slab, waxed_copper_block, waxed_cut_copper, waxed_cut_copper_stairs, waxed_cut_copper_slab:
+block copper_block, cut_copper, waxed_copper_block, waxed_cut_copper:
 weight: 10
 reflectiveness: 0.5
 specularness: 0.3
@@ -893,8 +992,7 @@ translucency: vec3(0.5, 0.75, 1.0)
 
 block pack_ice, packed_ice, blue_ice:
 weight: 5
-brightness: 0.95
-reflectiveness: 0.6
+reflectiveness: 0.7
 specularness: 0.5
 
 block slime_block:
@@ -914,43 +1012,169 @@ block command_block, chain_command_block, repeating_command_block:
 weight: 1
 specularness: 0.75
 
-block white_wool, white_carpet:
+block white_wool:
 weight: 2
 brightness: 0.95
 
-block yellow_wool, yellow_carpet:
+block yellow_wool:
 weight: 1
 brightness: 0.85
 
-block orange_wool, orange_carpet:
+block orange_wool:
 weight: 1
 brightness: 0.85
+
+// Carpets are flat 1px-thick blocks — voxelise as transparent so coloured light passes and they
+// get lit, instead of inheriting wool's solid voxelisation (which left them unlit on the floor).
+block white_carpet, orange_carpet, magenta_carpet, light_blue_carpet, yellow_carpet, lime_carpet, pink_carpet, gray_carpet, light_gray_carpet, cyan_carpet, purple_carpet, blue_carpet, brown_carpet, green_carpet, red_carpet, black_carpet, moss_carpet:
+weight: 2
+voxelize: true
+translucency: vec3(1.0, 1.0, 1.0)
 
 block nether_portal:
 weight: 1
 alias: BLOCK_ID_NETHER_PORTAL
 shadow casting: never
+// purple glow for colored lighting + tinted light passes through the portal sheet
+voxelize: true
+emission: vec3(1.4, 0.5, 2.1)
+translucency: vec3(0.7, 0.3, 1.0)
 
 block end_portal, end_gateway:
 weight: 1
 alias: BLOCK_ID_END_PORTAL
 shadow casting: never
 
+// Fast Item Frames renders item frames as block entities; their item-name label then goes through
+// gbuffers_block and gets lit → black/unreadable in dim rooms. Tag them so the label can render flat.
+block item_frame, glow_item_frame:
+weight: 1
+alias: BLOCK_ID_ITEM_FRAME
+
 
 
 // building blocks
 
-block quartz_block, quartz_stairs, quartz_slab, chiseled_quartz_block, quartz_bricks, quartz_pillar:
+// Sophisticated Storage/Backpacks tint their models with a per-block dye colour, so their glcolor is
+// NOT white. gbuffers_terrain's foliage tint is gated on the crude "glcolor != white => must be
+// biome-tinted foliage" heuristic, so these were getting FOLIAGE_TINT_* painted onto them (visibly
+// green barrels). Registering them gives an id the tint can skip. Split in two so the colored-light
+// voxel behaviour is unchanged: solid storage stays a solid occluder (registered => no 255 remap),
+// partial ones (backpacks, decoration table) keep passing light like before.
+block sophisticatedstorage:barrel, sophisticatedstorage:copper_barrel, sophisticatedstorage:iron_barrel, sophisticatedstorage:gold_barrel, sophisticatedstorage:diamond_barrel, sophisticatedstorage:netherite_barrel, sophisticatedstorage:limited_barrel_1, sophisticatedstorage:limited_barrel_2, sophisticatedstorage:limited_barrel_3, sophisticatedstorage:limited_barrel_4, sophisticatedstorage:limited_copper_barrel_1, sophisticatedstorage:limited_copper_barrel_2, sophisticatedstorage:limited_copper_barrel_3, sophisticatedstorage:limited_copper_barrel_4, sophisticatedstorage:limited_iron_barrel_1, sophisticatedstorage:limited_iron_barrel_2, sophisticatedstorage:limited_iron_barrel_3, sophisticatedstorage:limited_iron_barrel_4, sophisticatedstorage:limited_gold_barrel_1, sophisticatedstorage:limited_gold_barrel_2, sophisticatedstorage:limited_gold_barrel_3, sophisticatedstorage:limited_gold_barrel_4, sophisticatedstorage:limited_diamond_barrel_1, sophisticatedstorage:limited_diamond_barrel_2, sophisticatedstorage:limited_diamond_barrel_3, sophisticatedstorage:limited_diamond_barrel_4, sophisticatedstorage:limited_netherite_barrel_1, sophisticatedstorage:limited_netherite_barrel_2, sophisticatedstorage:limited_netherite_barrel_3, sophisticatedstorage:limited_netherite_barrel_4, sophisticatedstorage:chest, sophisticatedstorage:copper_chest, sophisticatedstorage:iron_chest, sophisticatedstorage:gold_chest, sophisticatedstorage:diamond_chest, sophisticatedstorage:netherite_chest, sophisticatedstorage:shulker_box, sophisticatedstorage:copper_shulker_box, sophisticatedstorage:iron_shulker_box, sophisticatedstorage:gold_shulker_box, sophisticatedstorage:diamond_shulker_box, sophisticatedstorage:netherite_shulker_box, sophisticatedstorage:controller, sophisticatedstorage:storage_link, sophisticatedstorage:storage_io, sophisticatedstorage:storage_input, sophisticatedstorage:storage_output:
+weight: 5
+alias: BLOCK_ID_SOPHISTICATED_SOLID
+
+block sophisticatedbackpacks:backpack, sophisticatedbackpacks:copper_backpack, sophisticatedbackpacks:iron_backpack, sophisticatedbackpacks:gold_backpack, sophisticatedbackpacks:diamond_backpack, sophisticatedbackpacks:netherite_backpack, sophisticatedstorage:decoration_table:
+weight: 5
+alias: BLOCK_ID_SOPHISTICATED_PARTIAL
+voxelize: true
+translucency: vec3(1.0, 1.0, 1.0)
+
+block quartz_block, chiseled_quartz_block, quartz_bricks, quartz_pillar:
 weight: 10
 reflectiveness: 0.4
 specularness: 0.5
 
-block smooth_quartz, smooth_quartz_stairs, smooth_quartz_slab:
+block smooth_quartz:
 weight: 10
 reflectiveness: 0.4
 specularness: 0.5
+
+// Quartz stairs/slabs: same reflectiveness/specularness as the full quartz block (they were being
+// swallowed by the generic stairs/slab material and rendered dull), PLUS voxelize+translucency so
+// they still pass colored light like the other partial blocks.
+block quartz_stairs, smooth_quartz_stairs, quartz_slab, smooth_quartz_slab:
+weight: 10
+reflectiveness: 0.4
+specularness: 0.5
+voxelize: true
+translucency: vec3(1.0, 1.0, 1.0)
+
+// Partial blocks (stairs/slabs/walls, iron door/trapdoor) of materials that have their own look: they were
+// listed in BOTH the generic translucent partial-block group AND their material group, so the mapping was
+// ambiguous and some resolved to the material group -> solid occluder (why e.g. top slabs blocked
+// coloured light). One entry each = the material's reflectiveness/specularness PLUS voxelize-translucent.
+block sandstone_stairs, sandstone_slab, sandstone_wall, smooth_sandstone_stairs, smooth_sandstone_slab, cut_sandstone_slab:
+weight: 5
+specularness: 0.2
+voxelize: true
+translucency: vec3(1.0, 1.0, 1.0)
+
+block diorite_stairs, diorite_slab, diorite_wall:
+weight: 5
+specularness: 0.25
+voxelize: true
+translucency: vec3(1.0, 1.0, 1.0)
+
+block polished_granite_stairs, polished_granite_slab, polished_diorite_stairs, polished_diorite_slab, polished_andesite_stairs, polished_andesite_slab, polished_deepslate_stairs, polished_deepslate_slab:
+weight: 5
+reflectiveness: 0.25
+specularness: 0.6
+voxelize: true
+translucency: vec3(1.0, 1.0, 1.0)
+
+block prismarine_brick_stairs, prismarine_brick_slab:
+weight: 5
+reflectiveness: 0.9
+specularness: 0.4
+voxelize: true
+translucency: vec3(1.0, 1.0, 1.0)
+
+block iron_door, iron_trapdoor:
+weight: 5
+reflectiveness: 0.4
+specularness: 0.3
+voxelize: true
+translucency: vec3(1.0, 1.0, 1.0)
+
+block cut_copper_stairs, cut_copper_slab, waxed_cut_copper_stairs, waxed_cut_copper_slab:
+weight: 5
+reflectiveness: 0.5
+specularness: 0.3
+voxelize: true
+translucency: vec3(1.0, 1.0, 1.0)
 
 block white_glazed_terracotta, light_gray_glazed_terracotta, gray_glazed_terracotta, black_glazed_terracotta, brown_glazed_terracotta, red_glazed_terracotta, orange_glazed_terracotta, yellow_glazed_terracotta, lime_glazed_terracotta, green_glazed_terracotta, cyan_glazed_terracotta, light_blue_glazed_terracotta, blue_glazed_terracotta, purple_glazed_terracotta, magenta_glazed_terracotta, pink_glazed_terracotta:
 weight: 10
 reflectiveness: 0.5
 specularness: 0.5
+
+
+// ===== partial / non-full blocks: let coloured light pass through (auto-generated) =====
+block acacia_wall_hanging_sign, attached_melon_stem, attached_pumpkin_stem, bamboo_wall_hanging_sign, birch_wall_hanging_sign, black_bed, black_candle_cake, blue_bed, blue_candle_cake, brown_bed, brown_candle_cake, cactus, cake, candle_cake, cherry_wall_hanging_sign, chorus_flower, chorus_plant, cocoa, copper_grate, creeper_head, creeper_wall_head, crimson_wall_hanging_sign, cut_red_sandstone_stairs, cut_sandstone_stairs, cyan_bed, cyan_candle_cake, dark_oak_wall_hanging_sign, daylight_detector, decorated_pot, dragon_head, dragon_wall_head, exposed_copper_grate, frogspawn, gray_bed, gray_candle_cake, green_bed, green_candle_cake, hanging_roots, jungle_wall_hanging_sign:
+weight: 3
+voxelize: true
+translucency: vec3(1.0, 1.0, 1.0)
+
+block kelp, kelp_plant, lever, light_blue_bed, light_blue_candle_cake, light_gray_bed, light_gray_candle_cake, lightning_rod, lily_pad, lime_bed, lime_candle_cake, magenta_bed, magenta_candle_cake, mangrove_wall_hanging_sign, melon_stem, oak_wall_hanging_sign, orange_bed, orange_candle_cake, oxidized_copper_grate, pale_moss_carpet, pale_oak_wall_hanging_sign, piglin_head, piglin_wall_head, pink_bed, pink_candle_cake, player_head, player_wall_head:
+weight: 3
+voxelize: true
+translucency: vec3(1.0, 1.0, 1.0)
+
+block pumpkin_stem, purple_bed, purple_candle_cake, red_bed, red_candle_cake, redstone_wire:power=0, resin_brick_slab, resin_brick_stairs, resin_brick_wall, seagrass, skeleton_skull, skeleton_wall_skull, sniffer_egg:
+weight: 3
+voxelize: true
+translucency: vec3(1.0, 1.0, 1.0)
+
+block spore_blossom, spruce_wall_hanging_sign, tall_seagrass, torchflower_crop, tripwire, tripwire_hook, turtle_egg, warped_wall_hanging_sign, waxed_copper_door, waxed_copper_grate, waxed_copper_trapdoor, waxed_exposed_copper_door, waxed_exposed_copper_grate, waxed_exposed_copper_trapdoor, waxed_oxidized_copper_door, waxed_oxidized_copper_grate, waxed_oxidized_copper_trapdoor, waxed_weathered_copper_door, waxed_weathered_copper_grate, waxed_weathered_copper_trapdoor, weathered_copper_grate, white_bed, white_candle_cake, wither_rose, wither_skeleton_skull, wither_skeleton_wall_skull, yellow_bed, yellow_candle_cake, zombie_head, zombie_wall_head:
+weight: 3
+voxelize: true
+translucency: vec3(1.0, 1.0, 1.0)
+
+
+// sculk sensor / calibrated sculk sensor glow cyan when active
+block sculk_sensor:sculk_sensor_phase=active, calibrated_sculk_sensor:sculk_sensor_phase=active:
+weight: 1
+voxelize: true
+translucency: vec3(1.0, 1.0, 1.0)
+emission: vec3(0.1, 0.9, 1.1)
+
+// [potted plants] treated EXACTLY like the empty flower_pot (voxelise + translucent, NO foliage flag).
+// The isFlatShaded/foliage flag applies to the WHOLE block, so it also force-up-normalled the POT and
+// made it brighter than an empty flower_pot — inconsistent. Matching the empty pot keeps them uniform;
+// they still pass coloured light as partial blocks.
+block potted_acacia_sapling, potted_allium, potted_azalea, potted_azure_bluet, potted_bamboo, potted_birch_sapling, potted_blue_orchid, potted_brown_mushroom, potted_cactus, potted_cherry_sapling, potted_closed_eyeblossom, potted_cornflower, potted_crimson_fungus, potted_crimson_roots, potted_dandelion, potted_dark_oak_sapling, potted_dead_bush, potted_fern, potted_flowering_azalea, potted_jungle_sapling, potted_lily_of_the_valley, potted_mangrove_propagule, potted_oak_sapling, potted_open_eyeblossom, potted_orange_tulip, potted_oxeye_daisy, potted_pink_tulip, potted_poppy, potted_red_mushroom, potted_red_tulip, potted_spruce_sapling, potted_torchflower, potted_warped_fungus, potted_warped_roots, potted_white_tulip, potted_wither_rose:
+weight: 3
+voxelize: true
+translucency: vec3(1.0, 1.0, 1.0)

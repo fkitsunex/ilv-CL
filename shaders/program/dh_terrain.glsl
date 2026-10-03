@@ -12,11 +12,23 @@ flat in_out int dhBlock;
 #ifdef FSH
 
 void main() {
-	
-	float lengthCylinder = max(length(playerPos.xz), abs(playerPos.y));
-	if (lengthCylinder < far - 4.0) discard;
-	
+
 	vec3 color = glcolor;
+
+	// DH terrain fade-in — exact complement of gbuffers_terrain (same dither & fog curve).
+	// DH discards where vanilla keeps (dither<=fog), keeps where vanilla discards. The `abs(playerPos.y)`
+	// is INTENTIONAL here (unlike the colour border fog): high above unloaded terrain it keeps the DH
+	// LOD so a top-down teleport view fills instead of leaving a hole. Do NOT weight it down.
+	#ifdef DISTANT_HORIZONS
+		float dither = bayer64(gl_FragCoord.xy);
+		#if TEMPORAL_FILTER_ENABLED == 1
+			dither = fract(dither + 1.61803398875 * mod(float(frameCounter), 3600.0));
+		#endif
+		float fog = max(length(playerPos.xz), abs(playerPos.y)) / far;
+		fog = pow2(pow2(pow2(pow2(fog))));
+		fog = exp(-3.0 * fog);
+		if (dither <= fog) discard;
+	#endif
 	
 	
 	// add noise for fake texture
@@ -35,7 +47,7 @@ void main() {
 	gl_FragData[0] = vec4(color, 1.0);
 	gl_FragData[1] = vec4(
 		pack_2x8(lmcoord),
-		pack_7_7_1_1(0.0, float(dhBlock == DH_BLOCK_LEAVES), 0.0, 0.0),
+		pack_2x8(0.0, float(dhBlock == DH_BLOCK_LEAVES)),
 		encodedNormal
 	);
 	
@@ -68,25 +80,23 @@ void main() {
 	dhBlock = dhMaterialId;
 	
 	
-	//if (dhMaterialId == DH_BLOCK_LEAVES || dhMaterialId == DH_BLOCK_GRASS) {
-	//	glcolor = mix(vec3(getLum(glcolor)), glcolor, FOLIAGE_SATURATION);
-	//	glcolor *= vec3(FOLIAGE_TINT_RED, FOLIAGE_TINT_GREEN, FOLIAGE_TINT_BLUE);
-	//	#if SNOWY_TWEAKS_ENABLED == 1
-	//		if (inSnowyBiome > 0.0) {
-	//			float snowiness = (0.9 + 0.1 * wetness) * inSnowyBiome / (1.0 + 0.00390625 * length(playerPos)) * lmcoord.y * lmcoord.y;
-	//			glcolor = mix(glcolor, vec3(1.0, 1.05, 1.2), snowiness);
-	//			glcolor *= 1.0 + 0.4 * snowiness;
-	//		}
-	//	#endif
-	//}
-	//if (dhMaterialId == DH_BLOCK_LEAVES) glcolor *= 1.15;// + 0.3 * (gl_Normal.y * 0.5 - 0.5);
-	if (dhMaterialId == DH_BLOCK_LEAVES) glcolor *= 0.95;
+	if (dhMaterialId == DH_BLOCK_LEAVES || dhMaterialId == DH_BLOCK_GRASS) {
+		glcolor = mix(vec3(getLum(glcolor)), glcolor, FOLIAGE_SATURATION);
+		glcolor *= vec3(FOLIAGE_TINT_RED, FOLIAGE_TINT_GREEN, FOLIAGE_TINT_BLUE);
+		#if SNOWY_TWEAKS_ENABLED == 1
+			if (inSnowyBiome > 0.0) {
+				float snowiness = (0.9 + 0.1 * wetness) * inSnowyBiome / (1.0 + 0.00390625 * length(playerPos)) * lmcoord.y * lmcoord.y;
+				glcolor = mix(glcolor, vec3(1.0, 1.05, 1.2), snowiness);
+				glcolor *= 1.0 + 0.4 * snowiness;
+			}
+		#endif
+	}
+	if (dhMaterialId == DH_BLOCK_LEAVES) glcolor *= 1.15;// + 0.3 * (gl_Normal.y * 0.5 - 0.5);
 	
-	//glcolor = glcolor - (4.0 / 27.0) * glcolor * glcolor * glcolor;
-	//float m = getLum(glcolor);
-	//m = m * m * (3.0 - 2.0 * m);
-	//glcolor *= 1.0 - TEXTURE_CONTRAST * 0.125 + m * TEXTURE_CONTRAST * 0.25;
-	//glcolor.rgb = glcolor.rgb * (1.0 + TEXTURE_CONTRAST_2 * 0.025) - TEXTURE_CONTRAST_2 * 0.025;
+	glcolor = glcolor - (4.0 / 27.0) * glcolor * glcolor * glcolor;
+	float m = getLum(glcolor);
+	m = m * m * (3.0 - 2.0 * m);
+	glcolor *= 1.0 - TEXTURE_CONTRAST * 0.125 + m * TEXTURE_CONTRAST * 0.25;
 	
 	
 	gl_Position = viewToNdc(viewPos);
@@ -98,15 +108,7 @@ void main() {
 	#endif
 	
 	
-	doVshLighting(lmcoord, glcolor, viewPos, normal, gl_Normal);
-	
-	// add fake shadows
-	#if SHADOWS_TYPE == 1
-		const float fakeShadowsStrength = 0.125;
-	#else
-		const float fakeShadowsStrength = 0.25;
-	#endif
-	lmcoord.y = min(lmcoord.y, 1.0 - fakeShadowsStrength + fakeShadowsStrength * step(0.96, lmcoord.y));
+	doVshLighting(lmcoord, viewPos, normal);
 	
 }
 

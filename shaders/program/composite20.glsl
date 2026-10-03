@@ -33,7 +33,7 @@ in_out vec2 texcoord;
 
 void main() {
 	
-	float depth = texelFetch(DEPTH_BUFFER_WO_TRANS, texelcoord, 0).r;
+	float depth = texelFetch(DEPTH_BUFFER_ALL, texelcoord, 0).r;
 	
 	#if KUWAHARA_ENABLED == 1
 		vec3 color = texelFetch(MAIN_TEXTURE, texelcoord, 0).rgb * 2.0;
@@ -56,30 +56,24 @@ void main() {
 	
 	#if BLOOM_ENABLED == 1
 		vec3 bloomAddition = vec3(0.0);
-		bloomAddition += texture2D(BLOOM_TEXTURE, min(texcoord * 8.0 / 27.0, vec2(8.0/27.0) - pixelSize * 2.0)).rgb;
-		#if HORROR_MODE == 0
-			bloomAddition *= 8.0;
-			float dither = bayer64(gl_FragCoord.xy);
-			dither = fract(dither + 1.61803398875 * mod(float(frameCounter), 3600.0));
-			float bloomSizeMult = 0.04 * BLOOM_SIZE / sqrt(toBlockDepth(depth) + 10.0) * mix(0.5, 1.5, dither);
-			bloomAddition += texture2D(BLOOM_TEXTURE, min(texcoord * 8.0 / 27.0 + bloomSizeMult * vec2( invAspectRatio,  0.0), vec2(8.0/27.0) - pixelSize * 2.0)).rgb;
-			bloomAddition += texture2D(BLOOM_TEXTURE, min(texcoord * 8.0 / 27.0 + bloomSizeMult * vec2( 0.0           ,  1.0), vec2(8.0/27.0) - pixelSize * 2.0)).rgb;
-			bloomAddition += texture2D(BLOOM_TEXTURE, min(texcoord * 8.0 / 27.0 + bloomSizeMult * vec2(-invAspectRatio,  0.0), vec2(8.0/27.0) - pixelSize * 2.0)).rgb;
-			bloomAddition += texture2D(BLOOM_TEXTURE, min(texcoord * 8.0 / 27.0 + bloomSizeMult * vec2( 0.0           , -1.0), vec2(8.0/27.0) - pixelSize * 2.0)).rgb;
-			bloomAddition *= 1.0/12.0;
-		#endif
+		bloomAddition += texture2D(BLOOM_TEXTURE, texcoord).rgb;
+		bloomAddition += texture2D(BLOOM_TEXTURE, texcoord + 0.01 * BLOOM_SIZE * vec2( invAspectRatio,  0.0)).rgb;
+		bloomAddition += texture2D(BLOOM_TEXTURE, texcoord + 0.01 * BLOOM_SIZE * vec2( 0.0           ,  1.0)).rgb;
+		bloomAddition += texture2D(BLOOM_TEXTURE, texcoord + 0.01 * BLOOM_SIZE * vec2(-invAspectRatio,  0.0)).rgb;
+		bloomAddition += texture2D(BLOOM_TEXTURE, texcoord + 0.01 * BLOOM_SIZE * vec2( 0.0           , -1.0)).rgb;
+		bloomAddition *= 0.2;
 		bloomAddition = sqrt(bloomAddition);
 		#ifdef OVERWORLD
-			const float bloomAmount = BLOOM_AMOUNT * 0.8;
+			const float bloomAmount = BLOOM_AMOUNT * 0.6;
 		#endif
 		#ifdef NETHER
-			const float bloomAmount = BLOOM_NETHER_AMOUNT * 0.8;
+			const float bloomAmount = BLOOM_NETHER_AMOUNT * 0.6;
 		#endif
 		#ifdef END
-			const float bloomAmount = BLOOM_END_AMOUNT * 0.8;
+			const float bloomAmount = BLOOM_END_AMOUNT * 0.6;
 		#endif
 		#if HORROR_MODE == 1
-			color = bloomAddition * 0.8;
+			color = bloomAddition;
 		#else
 			#if BLOOM_STYLE == 1
 				bloomAddition *= 1.0 - getLum(color);
@@ -87,7 +81,6 @@ void main() {
 				bloomAddition *= 0.5;
 			#endif
 			color += bloomAddition * bloomAmount;
-			//color = bloomAddition * 1.5;
 		#endif
 	#endif
 	
@@ -163,22 +156,6 @@ void main() {
 	
 	#if AUTO_EXPOSURE_ENABLED == 1
 		if (gl_FragCoord.x + gl_FragCoord.y < 1.1) depth = autoExposureBrightness;
-	#endif
-	
-	
-	
-	float lowLightStrength = eyeBrightnessSmooth.y / 240.0 * mix(0.6, 1.0, ambientMoonPercent);
-	float invLum = 1.0 - getLum(color);
-	lowLightStrength *= invLum;
-	lowLightStrength *= invLum;
-	#if LOW_LIGHT_DESATURATION > 0
-		color = mix(color, vec3(getLum(color)), lowLightStrength * (LOW_LIGHT_DESATURATION / 100.0));
-	#endif
-	#if LOW_LIGHT_CONTRAST < 0
-		color = mix(color, vec3(0.02, 0.018, 0.015), lowLightStrength * (LOW_LIGHT_CONTRAST / -100.0));
-	#endif
-	#if LOW_LIGHT_STATIC_STRENGTH > 0
-		color += texelFetch(noisetex, (ivec2(vec2(texelcoord) / viewHeight * 540.0) + int(frameTimeCounter * 24.0) * ivec2(51, 71)) & 127, 0).b * lowLightStrength * (LOW_LIGHT_STATIC_STRENGTH / 100.0 / 50.0);
 	#endif
 	
 	

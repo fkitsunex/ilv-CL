@@ -1,6 +1,5 @@
 in_out vec2 texcoord;
 in_out vec3 glcolor;
-flat in_out vec3 worldNormal;
 flat in_out vec3 normal;
 flat in_out vec2 encodedNormal;
 in_out vec3 viewPos;
@@ -32,22 +31,20 @@ void main() {
 	color.rgb /= ao;
 	adjustLmcoord(lmcoord);
 	
-	vec3 glcolor = glcolor;
-	doVshLighting(lmcoord, glcolor, viewPos, normal, worldNormal);
-	
 	float reflectiveness = reflectiveness;
 	reflectiveness *= 1.0 - 0.5 * getSaturation(color.rgb);
 	
-	color.rgb = color.rgb - (4.0 / 27.0) * color.rgb * color.rgb * color.rgb;
 	color.rgb = mix(color.rgb, overlayColor.rgb, overlayColor.a);
 	ao = 1.0 - (1.0 - ao) * mix(VANILLA_AO_DARK, VANILLA_AO_BRIGHT, max(lmcoord.x, lmcoord.y));
 	color.rgb *= ao;
 	color.rgb *= glcolor;
+	color.rgb = color.rgb - (4.0 / 27.0) * color.rgb * color.rgb * color.rgb;
 	
 	float m = getLum(color.rgb);
 	m = m * m * (3.0 - 2.0 * m);
 	color.rgb *= 1.0 - TEXTURE_CONTRAST * 0.125 + m * TEXTURE_CONTRAST * 0.25;
-	color.rgb = color.rgb * (1.0 + TEXTURE_CONTRAST_2 * 0.025) - TEXTURE_CONTRAST_2 * 0.025;
+	
+	doVshLighting(lmcoord, viewPos, normal);
 	
 	
 	#if SHOW_DANGEROUS_LIGHT == 1
@@ -80,7 +77,7 @@ void main() {
 	gl_FragData[0] = color;
 	gl_FragData[1] = vec4(
 		pack_2x8(lmcoord),
-		pack_7_7_1_1(reflectiveness, specularness, 0.0, 1.0),
+		pack_2x8(reflectiveness, 0.0),
 		encodeNormal(normal)
 	);
 	
@@ -95,7 +92,7 @@ void main() {
 
 #include "/utils/projections.glsl"
 
-#if TAA_ENABLED == 1 && TEMPORAL_FILTER_ENABLED == 1
+#if TAA_ENABLED == 1
 	#include "/lib/taa_jitter.glsl"
 #endif
 #if BORDER_FOG_ENABLED == 1
@@ -112,7 +109,6 @@ void main() {
 	#endif
 	playerPos = transform(gbufferModelViewInverse, viewPos);
 	
-	worldNormal = gl_Normal;
 	normal = gl_NormalMatrix * gl_Normal;
 	encodedNormal = encodeNormal(normal);
 	
@@ -130,7 +126,7 @@ void main() {
 	gl_Position = viewToNdc(viewPos);
 	
 	
-	#if TAA_ENABLED == 1 && TEMPORAL_FILTER_ENABLED == 1
+	#if TAA_ENABLED == 1
 		doTaaJitter(gl_Position.xy);
 	#endif
 	

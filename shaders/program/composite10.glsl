@@ -13,11 +13,13 @@ const bool colortex0MipmapEnabled = true;
 
 void main() {
 	
+	const int bloomIntScale = 1 << BLOOM_RENDER_SCALE;
+	
 	#if HORROR_MODE == 0
-		vec3 bloomColor = texelFetch(MAIN_TEXTURE, texelcoord, 1).rgb * 2.0;
-		float depth = texelFetch(DEPTH_BUFFER_WO_TRANS, texelcoord * 2, 0).r;
+		vec3 bloomColor = texelFetch(MAIN_TEXTURE, texelcoord, BLOOM_RENDER_SCALE).rgb * 2.0;
+		float depth = texelFetch(DEPTH_BUFFER_WO_TRANS, texelcoord * bloomIntScale + bloomIntScale / 2, 0).r;
 	#else
-		vec3 bloomColor = texture2DLod(MAIN_TEXTURE, texcoord, 1).rgb * 2.0;
+		vec3 bloomColor = texture2DLod(MAIN_TEXTURE, texcoord, BLOOM_RENDER_SCALE).rgb * 2.0;
 		float depth = texture2D(DEPTH_BUFFER_WO_TRANS, texcoord).r;
 	#endif
 	
@@ -25,7 +27,7 @@ void main() {
 	
 	
 	#ifdef DISTANT_HORIZONS
-		float depthDh = texelFetch(DH_DEPTH_BUFFER_WO_TRANS, texelcoord * 2, 0).r;
+		float depthDh = texelFetch(DH_DEPTH_BUFFER_WO_TRANS, texelcoord * bloomIntScale + bloomIntScale / 2, 0).r;
 		float fogAmount = float(depth == 1.0 && depthDh == 1.0);
 	#elif defined VOXY
 		float fogAmount = float(depth == 1.0);
@@ -40,28 +42,13 @@ void main() {
 	
 	
 	#if HORROR_MODE == 1
-		float bloomMult = dot(bloomColor, vec3(0.1, 0.45, 0.2) * 0.8) + 0.08;
+		float bloomMult = dot(bloomColor, vec3(0.2, 0.4, 0.2));
 	#elif BLOOM_STYLE == 1
-		float colorLum = getLum(bloomColor);
-		float mult_1 = dot(bloomColor, vec3(1.0, 0.5, -1.0) * 0.7);
-		mult_1 *= mult_1;
-		mult_1 *= mult_1;
-		mult_1 *= colorLum;
-		float mult_2 = getLum(bloomColor) * 0.8;//dot(bloomColor, vec3(0.0, 1.0, 1.0) * 0.4);
-		mult_2 *= mult_2;
-		mult_2 *= mult_2;
-		float bloomMult = max(mult_1, mult_2);
+		float bloomMult = dot(bloomColor, vec3(0.7, 0.4, -0.5) * 0.9);
+		bloomMult *= bloomMult;
 	#elif BLOOM_STYLE == 2
 		float bloomMult = getLum(bloomColor);
 	#endif
-	
-	
-	#if EMISSIVES_BLOOM_ENABLED == 1
-		vec4 opaqueData = texelFetch(OPAQUE_DATA_TEXTURE, texelcoord * 2, 0);
-		vec4 miscData = unpack_7_7_1_1(opaqueData.y);
-		bloomMult += EMISSIVES_BLOOM_AMOUNT * min(miscData.x * 2.0, 1.0) * miscData.z;
-	#endif
-	
 	
 	bloomMult = smoothstep(BLOOM_LOW_CUTOFF, BLOOM_HIGH_CUTOFF, bloomMult);
 	//#if BLOOM_STYLE == 1
@@ -70,19 +57,13 @@ void main() {
 	float fogDecrease = 1.0 - 0.5 * fogAmount;
 	fogDecrease *= fogDecrease;
 	bloomMult *= fogDecrease;
-	bloomColor = normalize(bloomColor + 0.00001) * bloomMult;
+	bloomColor *= bloomMult;
 	#if HORROR_MODE == 1
 		bloomColor = vec3(bloomMult);
 	#endif
 	
 	bloomColor *= bloomColor;
 	//bloomColor = sqrt(bloomColor);
-	bloomColor *= BLOOM_FINAL_TINT;
-	
-	
-	#if EMISSIVES_BLOOM_ENABLED == 1
-		bloomColor *= 1.0 + 0.5 * EMISSIVES_BLOOM_AMOUNT * min(miscData.x * 2.0, 1.0) * miscData.z;
-	#endif
 	
 	
 	/* DRAWBUFFERS:4 */

@@ -12,20 +12,23 @@ in_out vec3 viewPos;
 	in_out vec3 glowingColorMin;
 	in_out vec3 glowingColorMax;
 	in_out float glowingAmount;
+	flat in_out uint zincMatId;
+	flat in_out vec2 zincMid;
+	flat in_out vec2 zincOffset;
 #endif
 
 
 
 #ifdef FSH
 
+#include "/lib/enchant_outlines.glsl"
+
 void main() {
 	
-	vec4 rawColor = texture2D(MAIN_TEXTURE, texcoord);
-	if (rawColor.a < alphaTestRef) discard;
-	
+	vec4 rawColor = texture2D(MAIN_TEXTURE, texcoord) * vec4(glcolor, 1.0);
+	if (rawColor.a == 0.0) discard;
 	vec4 color = rawColor;
-	color.rgb = color.rgb - (4.0 / 27.0) * color.rgb * color.rgb * color.rgb;
-	color.rgb *= glcolor;
+	color.rgb = mix(vec3(getLum(color.rgb)), color.rgb, 1.05);
 	
 	
 	// make yellow colors brighter
@@ -47,12 +50,19 @@ void main() {
 	float reflectiveness = 0.0;
 	float specularness = 0.3;
 	
-	float glowing = 0.0;
 	#if EMISSIVE_TEXTURES_ENABLED == 1
 		vec3 hsv = rgbToHsv(rawColor.rgb);
 		if (all(greaterThan(hsv, glowingColorMin)) && all(lessThan(hsv, glowingColorMax))) {
-			glowing = 1.0;
+			specularness = 254.0 / 255.0;
 			reflectiveness = clamp(glowingAmount * 0.5, 0.0, 1.0);
+		}
+		// Zinc ore held in hand: same embedded glow mask (colortex15) + tile-local UV
+		if (zincMatId == BLOCK_ID_ZINC_ORE) {
+			vec2 zincLocalUV = percentThrough(texcoord, zincMid - zincOffset, zincMid + zincOffset);
+			if (texture2D(colortex15, zincLocalUV).r > 0.5) {
+				specularness = 254.0 / 255.0;
+				reflectiveness = clamp(GLOWING_ORES_STRENGTH * GLOWING_ZINC_ORE_STRENGTH * 0.5, 0.0, 1.0);
+			}
 		}
 	#endif
 	
@@ -62,10 +72,32 @@ void main() {
 		color = vec4(1.0, 0.5, 0.25, 1.0);
 	#endif
 	color.rgb *= 0.5;
+	// Held items shouldn't appear in water reflections → tag with the 253/255 no-reflect flag (but keep
+	// the 254/255 emissive flag intact for a held glowing item so it still glows).
+	float reflFlag = specularness > 253.5 / 255.0 ? specularness : 253.0 / 255.0;
+	// enchanted item texels (Enchantment Outlines): 252/255 = fullbright flag for deferred1, and stamp
+	// this hand so the lighting casts a small purple light around the player (CL_ENCHANT_STRENGTH)
+	if (isEnchantTexel(texcoord, true)) {
+		#if COLORED_LIGHTING_ENABLED == 1
+			stampEnchantHand();
+		#endif
+		if (isEnchantTexel(texcoord, false)) {
+			reflFlag = 252.0 / 255.0;
+			reflectiveness = 0.0;
+		} else {
+			// outline (alpha 200): raw texture colour at ENCHANT_OUTLINE_OPACITY, composited in composite4
+			#if COLORED_LIGHTING_ENABLED == 1
+				storeEnchantOutline(texture2DLod(MAIN_TEXTURE, texcoord, 0.0).rgb * ENCHANT_OUTLINE_TINT);
+				discard;
+			#else
+				color.a = ENCHANT_OUTLINE_OPACITY; // no image support without CL: lit, but with the opacity
+			#endif
+		}
+	}
 	gl_FragData[0] = vec4(color);
 	gl_FragData[1] = vec4(
 		pack_2x8(lmcoord),
-		pack_7_7_1_1(reflectiveness, specularness, glowing, 1.0),
+		pack_2x8(reflectiveness, reflFlag),
 		encodedNormal
 	);
 	
@@ -80,7 +112,7 @@ void main() {
 #define PROJECTION_MATRIX gl_ProjectionMatrix
 #include "/utils/projections.glsl"
 #include "/lib/lighting/vsh_lighting.glsl"
-#if TAA_ENABLED == 1 && TEMPORAL_FILTER_ENABLED == 1
+#if TAA_ENABLED == 1
 	#include "/lib/taa_jitter.glsl"
 #endif
 
@@ -113,26 +145,29 @@ void main() {
 		#define GET_GLOWING_COLOR
 	#endif
 	#include "/generated/blockDatas.glsl"
+
+	#if EMISSIVE_TEXTURES_ENABLED == 1
+		zincMatId = materialId;
+		zincMid = mat2(gl_TextureMatrix[0]) * mc_midTexCoord;
+		zincOffset = abs(texcoord - zincMid);
+	#endif
 	
 	
-	gl_Position = ftransform();
+	gl_Position = viewToNdc(transform(gl_ModelViewMatrix, gl_Vertex.xyz));
 	#if PROJECTION_TYPE == 1
 		//gl_Position.xy *= 1.5;
 	#endif
 	
 	
-	#if TAA_ENABLED == 1 && TEMPORAL_FILTER_ENABLED == 1
+	#if TAA_ENABLED == 1
 		doTaaJitter(gl_Position.xy);
 	#endif
 	
 	
 	vec3 screenPos = vec3((gl_Position.xy / gl_Position.w) * 0.5 + 0.5, HAND_DEPTH);
 	viewPos = screenToView(screenPos);
-	doVshLighting(lmcoord, glcolor, viewPos, normal, gl_Normal);
+	doVshLighting(lmcoord, viewPos, normal);
 	
-	#if HIDE_OPAQUE_HAND == 1
-		gl_Position = vec4(1.0);
-	#endif
 }
 
 #endif

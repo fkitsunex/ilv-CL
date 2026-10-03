@@ -23,14 +23,21 @@ in_out vec3 viewPos;
 
 void main() {
 	vec2 lmcoord = lmcoord;
-	
-	
+
+	// Nametag detection for BLOCK ENTITIES whose floating label is tagged as id 10001 (renders flat &
+	// unlit like vanilla). NOTE: Create's Frogport address text is NOT tagged and is drawn with the
+	// world lightmap (not fullbright), so it has no signal here — see the lighting-floor handling below.
+	bool isNametag = (entityId == 10001);
+
+
 	// get pbr data
 	#if PBR_TYPE == 0
 		float reflectiveness = reflectiveness;
 	#elif PBR_TYPE == 1
 		vec2 pbrData = texture2D(specular, texcoord).rg;
 		float reflectiveness = pbrData.g;
+		// [upstream I-Like-Vanilla v1.4.5] labPBR metal fix: F0 values 230-255 are a metal-type
+		// index, not a reflectance, so using pbrData.g raw made metals near-mirror ("too reflective").
 		if (int(reflectiveness * 255.0 + 0.5) > 229) reflectiveness -= 175.0 / 255.0;
 		reflectiveness *= 0.5;
 		float specularness = sqrt(pbrData.r);
@@ -43,21 +50,30 @@ void main() {
 		vec2 encodedNormal = encodeNormal(normal);
 	#endif
 	reflectiveness *= mix(BLOCK_REFLECTION_AMOUNT_SURFACE, BLOCK_REFLECTION_AMOUNT_UNDERGROUND, lmcoord.y);
+	// Block entities (chests, signs, beds, banners, ...) must NOT be reflective. Diagnostics proved the
+	// chest carries reflectiveness>0 in colortex2 (OPAQUE_DATA) despite not being registered, and the
+	// reflection pass (composite4) reads it → the dark crumbling overlay during breaking then reveals it
+	// as a moving "mirror". Force it to 0 here so neither the static chest nor the breaking reflects.
+	// (Pairs with gbuffers_damagedblock writing reflectiveness=0 to colortex3, covering both data paths.)
+	reflectiveness = 0.0;
 	
 	
 	// get texture color
 	vec4 rawColor = texture2D(MAIN_TEXTURE, texcoord);
 	if (rawColor.a < 0.01) discard;
 	vec4 color = rawColor;
-	color.rgb = color.rgb - (4.0 / 27.0) * color.rgb * color.rgb * color.rgb;
 	color.rgb *= glcolor;
+	color.rgb = color.rgb - (4.0 / 27.0) * color.rgb * color.rgb * color.rgb;
 	
 	float m = getLum(color.rgb);
 	m = m * m * (3.0 - 2.0 * m);
 	color.rgb *= 1.0 - TEXTURE_CONTRAST * 0.125 + m * TEXTURE_CONTRAST * 0.25;
-	color.rgb = color.rgb * (1.0 + TEXTURE_CONTRAST_2 * 0.025) - TEXTURE_CONTRAST_2 * 0.025;
-	
-	
+
+	// Nametag background is a dark translucent quad that writes depth (a black box over the label).
+	// Discard its near-black fragments so only the text remains, exactly like gbuffers_entities.
+	if (isNametag && getLum(color.rgb) < 0.025) discard;
+
+
 	// misc
 	
 	#if PBR_TYPE == 0
@@ -137,9 +153,9 @@ void main() {
 	#endif
 	
 	
-	// main lighting
+	// main lighting (skipped for nametags so they stay flat/unlit & fullbright, like vanilla)
 	float isAfterDeferred = texelFetch(colortex10, ivec2(0), 0).r;
-	if (isAfterDeferred > 0.5) {
+	if (isAfterDeferred > 0.5 && !isNametag) {
 		float _inSunlightAmount;
 		doFshLighting(color.rgb, _inSunlightAmount, lmcoord.x, lmcoord.y, specularness, 0.0, viewPos, normal, gl_FragCoord.z);
 	}
@@ -155,7 +171,7 @@ void main() {
 	gl_FragData[0] = vec4(color);
 	gl_FragData[1] = vec4(
 		pack_2x8(lmcoord),
-		pack_7_7_1_1(reflectiveness, specularness, 0.0, 0.0),
+		pack_2x8(reflectiveness, specularness),
 		encodedNormal
 	);
 	
@@ -172,6 +188,9 @@ uniform int blockEntityId;
 #include "/utils/projections.glsl"
 #include "/lib/lighting/vsh_lighting.glsl"
 
+#if WAVING_ENABLED == 1
+	#include "/lib/waving.glsl"
+#endif
 #if TAA_ENABLED == 1
 	#include "/lib/taa_jitter.glsl"
 #endif
@@ -199,8 +218,8 @@ void main() {
 	#endif
 	materialId = encodedData;
 	materialId &= (1u << 10u) - 1u;
-	
-	
+
+
 	// process normals
 	
 	#if PBR_TYPE != 0
@@ -236,7 +255,7 @@ void main() {
 	#endif
 	
 	
-	doVshLighting(lmcoord, glcolor, viewPos, normal, gl_Normal);
+	doVshLighting(lmcoord, viewPos, normal);
 	
 }
 

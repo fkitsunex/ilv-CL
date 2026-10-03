@@ -33,8 +33,8 @@ void voxy_emitFragment(VoxyFragmentParameters parameters) {
 		#if SNOWY_TWEAKS_ENABLED == 1
 			if (inSnowyBiome > 0.0) {
 				float snowiness = (0.9 + 0.1 * wetness) * inSnowyBiome / (1.0 + 0.00390625 * length(viewPos)) * lmcoord.y * lmcoord.y;
-				tintColor = mix(tintColor, vec3(1.0, 1.05, 1.2), snowiness);
-				tintColor *= 1.0 + 0.4 * snowiness;
+				tintColor = mix(tintColor, vec3(1.0, 1.02, 1.03), snowiness);
+				tintColor *= 1.0 + 0.4 * wetness;
 			}
 		#endif
 	}
@@ -46,7 +46,7 @@ void voxy_emitFragment(VoxyFragmentParameters parameters) {
 		float((parameters.face >> 1) == 0),
 		float((parameters.face >> 1) == 1)
 	);
-	worldNormal *= float(parameters.face & 1u) * 2.0 - 1.0;
+	worldNormal *= float(parameters.face & 1) * 2.0 - 1.0;
 	
 	// foliage normals
 	#if OVERRIDE_FOLIAGE_NORMALS == 1
@@ -66,28 +66,15 @@ void voxy_emitFragment(VoxyFragmentParameters parameters) {
 	#include "/generated/blockDatas.glsl"
 	
 	
-	// vsh lighting
-	doVshLighting(lmcoord, glcolor, viewPos, normal, worldNormal);
-	
-	// add fake shadows
-	#if SHADOWS_TYPE == 1
-		const float fakeShadowsStrength = 0.125;
-	#else
-		const float fakeShadowsStrength = 0.25;
-	#endif
-	lmcoord.y = min(lmcoord.y, 1.0 - fakeShadowsStrength + fakeShadowsStrength * step(0.96, lmcoord.y));
-	
-	
 	// main color
 	vec4 color = parameters.sampledColour;
-	color.rgb = color.rgb - (4.0 / 27.0) * color.rgb * color.rgb * color.rgb;
 	color.rgb *= tintColor;
 	color.rgb *= glcolor;
+	color.rgb = color.rgb - (4.0 / 27.0) * color.rgb * color.rgb * color.rgb;
 	
 	float m = getLum(color.rgb);
 	m = m * m * (3.0 - 2.0 * m);
 	color.rgb *= 1.0 - TEXTURE_CONTRAST * 0.125 + m * TEXTURE_CONTRAST * 0.25;
-	color.rgb = color.rgb * (1.0 + TEXTURE_CONTRAST_2 * 0.025) - TEXTURE_CONTRAST_2 * 0.025;
 	
 	color.rgb *= 1.0 + 0.03125 * worldNormal.y + 0.03125 * float(isFoliage);
 	
@@ -118,11 +105,15 @@ void voxy_emitFragment(VoxyFragmentParameters parameters) {
 	#endif
 	
 	
+	// vsh lighting
+	doVshLighting(lmcoord, viewPos, normal);
+	
+	
 	color.rgb *= 0.5;
 	albedoOut = color;
 	auxDataOut = vec4(
 		pack_2x8(lmcoord),
-		pack_7_7_1_1(0.0, specularness, 0.0, 0.0),
+		pack_2x8(0.0, specularness),
 		encodeNormal(normal)
 	);
 	

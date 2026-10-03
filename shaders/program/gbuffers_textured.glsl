@@ -22,6 +22,8 @@ void main() {
 	#elif PBR_TYPE == 1
 		vec2 pbrData = texture2D(specular, texcoord).rg;
 		float reflectiveness = pbrData.g;
+		// [upstream I-Like-Vanilla v1.4.5] labPBR metal fix: F0 values 230-255 are a metal-type
+		// index, not a reflectance, so using pbrData.g raw made metals near-mirror ("too reflective").
 		if (int(reflectiveness * 255.0 + 0.5) > 229) reflectiveness -= 175.0 / 255.0;
 		reflectiveness *= 0.5;
 		float specularness = sqrt(pbrData.r);
@@ -43,7 +45,10 @@ void main() {
 	gl_FragData[0] = vec4(color);
 	gl_FragData[1] = vec4(
 		pack_2x8(lmcoord),
-		pack_7_7_1_1(reflectiveness, specularness, 0.0, 1.0),
+		// 253/255 no-reflect flag: this program renders overlay-ish quads (mod UI like WATUT, some mod
+		// particles) that must not appear in water reflections. deferred1 maps the flag back to the
+		// real specularness (0.3), so their lighting is completely unchanged.
+		pack_2x8(reflectiveness, 253.0 / 255.0),
 		encodedNormal
 	);
 	
@@ -58,7 +63,7 @@ void main() {
 #include "/utils/projections.glsl"
 #include "/lib/lighting/vsh_lighting.glsl"
 
-#if TAA_ENABLED == 1 && TEMPORAL_FILTER_ENABLED == 1
+#if TAA_ENABLED == 1
 	#include "/lib/taa_jitter.glsl"
 #endif
 
@@ -83,16 +88,15 @@ void main() {
 	blockDepth = length(viewPos);
 	
 	
-	gl_Position = ftransform();
+	gl_Position = viewToNdc(viewPos);
 	
 	
-	#if TAA_ENABLED == 1 && TEMPORAL_FILTER_ENABLED == 1
+	#if TAA_ENABLED == 1
 		doTaaJitter(gl_Position.xy);
 	#endif
-	gl_Position.z -= 0.0002;
 	
 	
-	doVshLighting(lmcoord, glcolor.rgb, viewPos, normal, gl_Normal);
+	doVshLighting(lmcoord, viewPos, normal);
 	
 }
 

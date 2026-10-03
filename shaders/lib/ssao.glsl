@@ -22,6 +22,9 @@ float getAoAmount(float depth) {
 	float blockDepth = toBlockDepth(depth);
 	vec3 noise3 = texelFetch(noisetex, (texelcoord + frameCounter * 17) & 127, 0).rgb;
 	float fovScale = gbufferProjection[1][1];
+	// max(blockDepth, 6.0): upstream I-Like-Vanilla v1.4.4 perf fix. Without it, very small blockDepth
+	// (standing right against a surface) blows up the sample radius, scattering the AO taps across a huge
+	// screen area and thrashing the texture cache — a big FPS drop when close to objects.
 	float scale = AO_SIZE * 0.25 / pow(max(blockDepth, 6.0), 1.3) * fovScale;
 	vec2 offsetOffset = noise3.xy * scale * 0.125;
 	vec2 offsetMult = vec2(scale * invAspectRatio, scale);
@@ -41,7 +44,6 @@ float getAoAmount(float depth) {
 	}
 	total /= SAMPLE_COUNT;
 	total *= 1.0 - clamp(blockDepth * invFar, 0.0, 1.0);
-	total *= clamp(blockDepth / 6.0, 0.25, 1.0);
 	
 	return total;
 }

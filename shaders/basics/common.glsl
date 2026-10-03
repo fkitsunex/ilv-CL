@@ -21,6 +21,8 @@ const float HALF_PI = PI / 2.0;
 	uniform sampler2D colortex8;
 	uniform sampler2D colortex9;
 	uniform sampler2D colortex10;
+	uniform sampler2D colortex15; // custom: embedded zinc glow mask
+	uniform sampler2D colortex14; // custom: embedded salt glow mask (Expanded Delight)
 	uniform sampler2D depthtex0;
 	uniform sampler2D depthtex1;
 	uniform sampler2D depthtex2;
@@ -164,19 +166,6 @@ vec3 smoothMax(vec3 v1, vec3 v2, float a) {
 	return (v1 + v2 + sqrt(pow2(v1 - v2) + a * (v1Lum + v2Lum) / 2.0)) / 2.0;
 }
 
-// taken from https://iquilezles.org/articles/smin/:
-float smoothMin(float a, float b, float k) {
-    k *= 2.0;
-    float x = b - a;
-    return 0.5 * (a + b - sqrt(x * x + k * k));
-}
-
-float smoothMax(float a, float b, float k) {
-    k *= 2.0;
-    float x = a - b;
-    return 0.5 * (a + b + sqrt(x * x + k * k));
-}
-
 float percentThrough(float v, float low, float high) {
 	return clamp((v - low) / (high - low), 0.0, 1.0);
 }
@@ -221,28 +210,8 @@ float pack_2x8(vec2 v) {
 float pack_2x8(float x, float y) { return pack_2x8(vec2(x, y)); }
 
 vec2 unpack_2x8(float pack) {
-	vec2 v; v.x = modf((65535.0 / 256.0) * pack, v.y);
-	return v * vec2(256.0 / 255.0, 1.0 / 255.0);
-}
-
-float pack_7_7_1_1(vec4 v) {
-	uvec4 i = uvec4(v * vec4(127.0, 127.0, 1.0, 1.0) + 0.5);
-	return (
-		((i.x & 127u) << 0u) +
-		((i.y & 127u) << 7u) +
-		((i.z &   1u) << 14u) +
-		((i.w &   1u) << 15u)
-	) / 65535.0;
-}
-float pack_7_7_1_1(float x, float y, float z, float w) { return pack_7_7_1_1(vec4(x, y, z, w)); }
-vec4 unpack_7_7_1_1(float pack) {
-	uint v = uint(pack * 65535.0 + 0.5);
-	return vec4(
-		float((v >>  0u) & 127u) / 127.0,
-		float((v >>  7u) & 127u) / 127.0,
-		float((v >> 14u) &   1u) / 1.0,
-		float((v >> 15u) &   1u) / 1.0
-	);
+	vec2 xy; xy.x = modf((65535.0 / 256.0) * pack, xy.y);
+	return xy * vec2(256.0 / 255.0, 1.0 / 255.0);
 }
 
 // octahedral encoding/decoding
@@ -277,7 +246,7 @@ bool depthIsHand(float depth) {
 
 void adjustLmcoord(inout vec2 lmcoord) {
 	const float low = 1.0 / 16.0;
-	const float high = 15.0 / 16.0;
+	const vec2 high = vec2(13.0 / 16.0, 15.0 / 16.0);
 	lmcoord = clamp((lmcoord - low) / (high - low), 0.0, 1.0);
 }
 

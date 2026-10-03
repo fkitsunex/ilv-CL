@@ -22,6 +22,7 @@ flat in_out int dhBlock;
 #include "/utils/depth.glsl"
 
 #include "/utils/projections.glsl"
+#include "/utils/getFogColor.glsl"
 #if WAVING_WATER_SURFACE_ENABLED == 1
 	#include "/lib/simplex_noise.glsl"
 #endif
@@ -29,12 +30,15 @@ flat in_out int dhBlock;
 void main() {
 	
 	float dither = bayer64(gl_FragCoord.xy);
-	#if TEMPORAL_FILTER_ENABLED > 0
+	#if TEMPORAL_FILTER_ENABLED == 1
 		dither = fract(dither + 1.61803398875 * mod(float(frameCounter), 3600.0));
 	#endif
+	// complementary dither with gbuffers_water — exact same band & dither → perfect coverage, no gap.
+	// abs(playerPos.y) INTENTIONAL (top-down teleport fill); do NOT weight it down like the colour fog.
 	float lengthCylinder = max(length(playerPos.xz), abs(playerPos.y));
-	if (lengthCylinder < far - 8.0 - 8.0 * dither) discard;
-	
+	// complementary dither with gbuffers_water — exact same band & dither → perfect coverage, no gap
+	if (lengthCylinder < far - 24.0 - 24.0 * dither) discard;
+
 	float vanillaDepth = texelFetch(DEPTH_BUFFER_ALL, texelcoord, 0).r;
 	vec3 vanillaViewPos = screenToView(vec3(texelcoord * pixelSize, vanillaDepth));
 	if (vanillaViewPos.z > viewPos.z && vanillaDepth < 1.0) discard;
@@ -127,8 +131,7 @@ void main() {
 		//	#else
 		//		foamAmount *= 0.7;
 		//	#endif
-		//	if (isEyeInWater > 0) foamAmount *= 0.5;
-		//	color.rgb = mix(color.rgb, vec3(0.75 + 0.25 * dayPercent), foamAmount * WATER_FOAM_AMOUNT * 2.0);
+		//	color.rgb = mix(color.rgb, vec3(0.75 + 0.25 * dayPercent), foamAmount * WATER_FOAM_AMOUNT * 2.5);
 		//#endif
 		
 		//// water needs to be more opaque in dark areas
@@ -147,6 +150,10 @@ void main() {
 	if (dhBlock == DH_BLOCK_WATER) {
 		reflectiveness = mix(WATER_REFLECTION_AMOUNT_UNDERGROUND, WATER_REFLECTION_AMOUNT_SURFACE, lmcoord.y) * max(color.a * 1.3, 1.0);
 		specularness = 2.0;
+	} else {
+		// Non-water DH translucents (ice, glass): bind to vanilla block reflection settings
+		// (BLOCK_REFLECTION_AMOUNT_SURFACE/UNDERGROUND), base 0.5 like vanilla ice.
+		reflectiveness = 0.5 * mix(BLOCK_REFLECTION_AMOUNT_SURFACE, BLOCK_REFLECTION_AMOUNT_UNDERGROUND, lmcoord.y);
 	}
 	
 	
@@ -159,14 +166,26 @@ void main() {
 	#if BORDER_FOG_ENABLED == 1
 		color.a *= 1.0 - fogAmount;
 	#endif
-	
-	
+	// [atmospheric fog for DH water] DH water is translucent and composites AFTER composite1's depth-based
+	// atmospheric fog (composite1 only sees the opaque DH depth behind it), so distant DH water rendered
+	// un-fogged. Apply the density fog here from the water's OWN position, using the same resolved macros
+	// as composite1, so it fades into the fog like DH terrain does.
+	#ifdef OVERWORLD
+		if (isEyeInWater == 0) {
+			vec3 dhPlayerPos = transform(gbufferModelViewInverse, viewPos);
+			float dhFogDensity = mix(ATMOSPHERIC_FOG_DENSITY, NIGHT_ATMOSPHERIC_FOG_DENSITY, ambientMoonPercent) / 256.0;
+			float dhFogAmount = 1.0 - exp(-dhFogDensity * length(dhPlayerPos));
+			color.rgb = mix(color.rgb, getFogColor(viewPos, dhPlayerPos), dhFogAmount);
+		}
+	#endif
+
+
 	/* DRAWBUFFERS:03 */
 	color.rgb *= 0.5;
 	gl_FragData[0] = color;
 	gl_FragData[1] = vec4(
 		pack_2x8(lmcoord),
-		pack_7_7_1_1(reflectiveness, specularness, 0.0, 0.0),
+		pack_2x8(reflectiveness, 0.0),
 		encodeNormal(normal)
 	);
 	
@@ -203,7 +222,7 @@ void main() {
 	playerPos = transform(gbufferModelViewInverse, viewPos);
 	if (dhBlock == DH_BLOCK_WATER) {
 		playerPos.y -= 2.0 / 16.0;
-		viewPos = transform(gbufferModelView, playerPos);
+		viewPos = mat3(gbufferModelView) * playerPos;
 	}
 	
 	
@@ -221,15 +240,7 @@ void main() {
 	#endif
 	
 	
-	doVshLighting(lmcoord, glcolor.rgb, viewPos, normal, gl_Normal);
-	
-	// add fake shadows
-	#if SHADOWS_TYPE == 1
-		const float fakeShadowsStrength = 0.125;
-	#else
-		const float fakeShadowsStrength = 0.25;
-	#endif
-	lmcoord.y = min(lmcoord.y, 1.0 - fakeShadowsStrength + fakeShadowsStrength * step(0.96, lmcoord.y));
+	doVshLighting(lmcoord, viewPos, normal);
 	
 }
 

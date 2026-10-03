@@ -32,7 +32,7 @@ const BLOCK_DATAS_START: &str = r#"
 	#define SET_GLOWING_COLOR(v1, v2, v3)
 #endif
 #ifdef GET_VOXEL_ID
-	voxelId = float(abs(gl_Normal.x + gl_Normal.y + gl_Normal.z) == 1.0); // assume solid if normal is non-diagonal
+	voxelId = uint(abs(gl_Normal.x + gl_Normal.y + gl_Normal.z) == 1.0); // assume solid if normal is non-diagonal
 	#define SET_VOXEL_ID(v) voxelId = v;
 #else
 	#define SET_VOXEL_ID(v)
@@ -47,13 +47,13 @@ const VOXEL_DATAS_START: &str = r#"
 // To edit the voxel datas, edit the 'block datas input.txt' file then (in the 'rust-utils' folder) run `cargo run -- rebuild_ids`
 
 #ifdef GET_EMISSION
-	emission = 0.0;
+	emission = vec3(0.0);
 	#define SET_EMISSION(v) emission = v;
 #else
 	#define SET_EMISSION(v)
 #endif
 #ifdef GET_TRANSLUCENCY
-	translucency = 0.0;
+	translucency = vec3(0.0);
 	#define SET_TRANSLUCENCY(v) translucency = v;
 #else
 	#define SET_TRANSLUCENCY(v)
@@ -404,6 +404,9 @@ pub fn function(args: &[String]) -> Result<()> {
 			leaf.voxel_id = *curr_voxel_id;
 			unsafe {
 				// Safety: idk as long as the output is good I'm happy
+				// (must match leaf.voxel_id exactly so blockDatas' SET_VOXEL_ID and the
+				//  voxelDatas tree agree — the increment below used to sit above this line,
+				//  giving every voxelised block an id one too high = wrong emission)
 				*leaf.block_data.voxel_id.get() = *curr_voxel_id;
 			}
 			*curr_voxel_id += 1;
@@ -501,7 +504,7 @@ pub fn function(args: &[String]) -> Result<()> {
 	// step 10: generate 'generated/common.glsl'
 	let mut generated_common_file = GENERATED_COMMON_START[1..].to_string();
 	for (alias, int_id) in aliases {
-		generated_common_file += &format!("const uint {alias} = {}u;\n", int_id & ((1 << 10) - 1));
+		generated_common_file += &format!("const uint {alias} = {}u;\n", int_id & ((1 << 11) - 1));
 	}
 	fs::write(shaders_path.join("generated/common.glsl"), generated_common_file)?;
 	

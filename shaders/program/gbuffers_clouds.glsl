@@ -2,7 +2,7 @@
 	in_out vec2 texcoord;
 #endif
 in_out vec3 playerPos;
-#if CLOUDS_TYPE == 2
+#if STORY_MODE_CLOUDS_ENABLED == 1
 	in_out float alphaMult;
 #endif
 
@@ -39,7 +39,7 @@ void main() {
 	
 	
 	// story mode clouds
-	#if CLOUDS_TYPE == 2
+	#if STORY_MODE_CLOUDS_ENABLED == 1
 		float alphaMult = 1.0 - alphaMult;
 		#if STORY_MODE_CLOUDS_CURVE == 2
 			alphaMult = pow2(alphaMult);
@@ -65,7 +65,7 @@ void main() {
 	
 	
 	// fog transparency
-	float dist = length(playerPos.xz) / VANILLA_CLOUDS_SCALE_XZ;
+	float dist = length(playerPos.xz);
 	dist /= 128.0 * 16.0 * 1.25;
 	float fogAmount = percentThrough(dist, 1.0, CLOUD_FOG_START);
 	#if CLOUD_FOG_CURVE == 2
@@ -79,8 +79,6 @@ void main() {
 	#endif
 	color.a *= fogAmount;
 	
-	color.a *= 1.0 - blindness;
-	color.a *= 1.0 - darknessFactor;
 	
 	/* DRAWBUFFERS:03 */
 	#if DO_COLOR_CODED_GBUFFERS == 1
@@ -90,7 +88,7 @@ void main() {
 	gl_FragData[0] = color;
 	gl_FragData[1] = vec4(
 		pack_2x8(0.0, 0.25),
-		pack_7_7_1_1(0.0, 0.0, 1.0, 0.0),
+		pack_2x8(0.0, 0.99),
 		0.0, 1.0
 	);
 	
@@ -115,18 +113,13 @@ void main() {
 	
 	vec3 viewPos = transform(gl_ModelViewMatrix, gl_Vertex.xyz);
 	playerPos = transform(gbufferModelViewInverse, viewPos);
-	#if CLOUDS_TYPE == 2
-		alphaMult = percentThrough(cameraPosition.y, cloudHeight + 8.0, cloudHeight - 4.0); // start off inverted
-		alphaMult *= float(playerPos.y + cameraPosition.y > cloudHeight + 1.5);
+	#if STORY_MODE_CLOUDS_ENABLED == 1
+		alphaMult = percentThrough(cameraPosition.y, cloudHeight + 32.0, cloudHeight - 8.0); // start off inverted
+		alphaMult *= float(playerPos.y + cameraPosition.y > cloudHeight + 1);
 		alphaMult = 1.0 - alphaMult;
 	#endif
-	playerPos.xz *= VANILLA_CLOUDS_SCALE_XZ;
-	playerPos.y *= VANILLA_CLOUDS_SCALE_Y;
-	playerPos.y += VANILLA_CLOUDS_HEIGHT_OFFSET;
-	viewPos = transform(gbufferModelView, playerPos);
 	
 	gl_Position = viewToNdc(viewPos);
-	gl_Position.z += 0.00004;
 	
 	#if TAA_ENABLED == 1
 		doTaaJitter(gl_Position.xy);

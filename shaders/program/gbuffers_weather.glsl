@@ -11,16 +11,24 @@ in_out vec3 viewPos;
 #include "/lib/lighting/simple_fsh_lighting.glsl"
 
 void main() {
+	// Rain/snow renders after translucents, so the HW depth test clipped it behind glass/water
+	// (vanilla-without-Fabulous behaviour). Weather doesn't write depth (vanilla masks it off), so we
+	// can bypass the HW test (gl_FragDepth = 0 always passes) and clip MANUALLY against the OPAQUE
+	// depth only — terrain still hides rain, but glass/water no longer erase it. composite1 then
+	// blends the weather buffer over the final image, i.e. the rain shows through windows.
+	if (gl_FragCoord.z > texelFetch(DEPTH_BUFFER_WO_TRANS, texelcoord, 0).r) discard;
+	gl_FragDepth = 0.0;
+
 	vec4 color = texture2D(MAIN_TEXTURE, texcoord) * glcolor;
-	
+
 	doSimpleFshLighting(color.rgb, lmcoord.x, lmcoord.y, 0.3, viewPos, normal);
-	
+
 	/* DRAWBUFFERS:8 */
 	#if DO_COLOR_CODED_GBUFFERS == 1
 		color = vec4(0.0, 0.5, 1.0, 1.0);
 	#endif
 	gl_FragData[0] = color;
-	
+
 }
 
 #endif
@@ -72,7 +80,7 @@ void main() {
 	glcolor.a *= 1.0 - WEATHER_TRANSPARENCY;
 	
 	
-	doVshLighting(lmcoord, glcolor.rgb, viewPos, normal, gl_Normal);
+	doVshLighting(lmcoord, viewPos, normal);
 	
 }
 

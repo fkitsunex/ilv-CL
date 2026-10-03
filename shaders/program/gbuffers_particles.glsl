@@ -18,13 +18,19 @@ in_out vec3 viewPos;
 #include "/lib/lighting/simple_fsh_lighting.glsl"
 
 void main() {
-	vec4 color = texture2D(MAIN_TEXTURE, texcoord) * glcolor;
-	
-	
+	vec4 rawColor = texture2D(MAIN_TEXTURE, texcoord);
+	vec4 color = rawColor * glcolor;
+
+	// "Hide nearby / fade colored particles" should only soften SOFT particles (smoke, etc.). Solid
+	// particles like block-breaking fragments use a fully-opaque block texel (alpha 1) — keep them
+	// opaque, otherwise they look see-through against DH terrain / water (the alpha<1 blends the
+	// background through them). softParticle = 1 for soft particles, 0 for solid fragments.
+	float softParticle = 1.0 - step(0.99, rawColor.a);
+
 	// hide nearby particles
 	float transparency = percentThrough(blockDepth, 0.5, 1.2);
-	color.a *= (transparency - 1.0) * NEARBY_PARTICLE_TRANSPARENCY + 1.0;
-	color.a *= 1.0 - COLORED_PARTICLE_TRANSPARENCY * getSaturation(glcolor.rgb);
+	color.a *= mix(1.0, (transparency - 1.0) * NEARBY_PARTICLE_TRANSPARENCY + 1.0, softParticle);
+	color.a *= 1.0 - COLORED_PARTICLE_TRANSPARENCY * getSaturation(glcolor.rgb) * softParticle;
 	
 	
 	#if PBR_TYPE == 0
@@ -33,6 +39,8 @@ void main() {
 	#elif PBR_TYPE == 1
 		vec2 pbrData = texture2D(specular, texcoord).rg;
 		float reflectiveness = pbrData.g;
+		// [upstream I-Like-Vanilla v1.4.5] labPBR metal fix: F0 values 230-255 are a metal-type
+		// index, not a reflectance, so using pbrData.g raw made metals near-mirror ("too reflective").
 		if (int(reflectiveness * 255.0 + 0.5) > 229) reflectiveness -= 175.0 / 255.0;
 		reflectiveness *= 0.5;
 		float specularness = sqrt(pbrData.r);
@@ -48,7 +56,15 @@ void main() {
 	
 	float isAfterDeferred = texelFetch(colortex10, ivec2(0), 0).r;
 	if (isAfterDeferred > 0.5) {
-		doSimpleFshLighting(color.rgb, lmcoord.x, lmcoord.y, specularness, viewPos, normal);
+		#if COLORED_LIGHTING_ENABLED == 1
+			clSoftSample = 1.0; // soft colour edges for particles (see applyColoredLight)
+		#endif
+		simpleParticleSun = 1.0; // undirected sun/moon light like the surfaces around (see simple_fsh_lighting)
+		float particleBlock = lmcoord.x;
+		#if COLORED_LIGHTING_ENABLED == 1
+			particleBlock = clParticleBlockLight(viewPos, normal, particleBlock); // no in-wall blackout
+		#endif
+		doSimpleFshLighting(color.rgb, particleBlock, lmcoord.y, specularness, viewPos, normal);
 	}
 	
 	
@@ -60,7 +76,7 @@ void main() {
 	gl_FragData[0] = vec4(color);
 	gl_FragData[1] = vec4(
 		pack_2x8(lmcoord),
-		pack_7_7_1_1(reflectiveness, specularness, 0.0, 1.0),
+		pack_2x8(reflectiveness, 253.0 / 255.0), // 253/255 = "no-reflect" flag → kept out of water reflections
 		encodedNormal
 	);
 	
@@ -75,7 +91,7 @@ void main() {
 #include "/utils/projections.glsl"
 #include "/lib/lighting/vsh_lighting.glsl"
 
-#if TAA_ENABLED == 1 && TEMPORAL_FILTER_ENABLED == 1
+#if TAA_ENABLED == 1
 	#include "/lib/taa_jitter.glsl"
 #endif
 
@@ -83,13 +99,9 @@ void main() {
 	texcoord = (gl_TextureMatrix[0] * gl_MultiTexCoord0).xy;
 	lmcoord  = (gl_TextureMatrix[1] * gl_MultiTexCoord1).xy;
 	adjustLmcoord(lmcoord);
-	lmcoord = min(lmcoord * 1.05, 1.0);
+	lmcoord = min(lmcoord + 0.05, 1.0);
 	glcolor = gl_Color;
-	#ifdef NETHER
-		glcolor.rgb *= PARTICLES_BRIGHTNESS * 0.75;
-	#else
-		glcolor.rgb *= PARTICLES_BRIGHTNESS;
-	#endif
+	glcolor.rgb *= 1.25;
 	glcolor.a = sqrt(glcolor.a);
 	
 	#if PBR_TYPE != 0
@@ -111,12 +123,12 @@ void main() {
 	gl_Position = viewToNdc(viewPos);
 	
 	
-	#if TAA_ENABLED == 1 && TEMPORAL_FILTER_ENABLED == 1
+	#if TAA_ENABLED == 1
 		doTaaJitter(gl_Position.xy);
 	#endif
 	
 	
-	doVshLighting(lmcoord, glcolor.rgb, viewPos, normal, gl_Normal);
+	doVshLighting(lmcoord, viewPos, normal);
 	
 }
 
