@@ -113,7 +113,7 @@ The original shader: [GitHub](https://github.com/What42Pizza/I-Like-Vanilla) · 
 - **[Nathan Reed](https://www.reedbeta.com/blog/hash-functions-for-gpu-rendering/):** Easy hashing function
 - **[Stephen Hill](https://github.com/TheRealMJP/BakingLab/blob/master/BakingLab/ACES.hlsl):** ACES tonemapper implementation
 - **Claude (Anthropic):** all ILV-CL code changes
-- **[Kukidoo](https://github.com/Kukidoo):** ILV-CL testing and direction
+- **[fkitsunex](https://github.com/fkitsunex):** ILV-CL testing and direction
 
 <br>
 
