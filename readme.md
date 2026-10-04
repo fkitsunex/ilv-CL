@@ -4,9 +4,9 @@
 
 It's based on **I Like Vanilla v1.4.0b**. Everything else (style, settings, look) is the original shader. All credit for it goes to What42Pizza and the people credited below.
 
-> **About the code:** every change in this fork was written by **Claude** (Anthropic's AI). The maintainer of this fork ([Kukidoo](https://github.com/Kukidoo)) designed, tested and directed the changes in-game, but **did not personally write a single line of code**.
+> **About the code:** every change in this fork was written by **Claude** (Anthropic's AI). The maintainer of this fork ([fkitsunex](https://github.com/Kukidoo)) designed, tested and directed the changes in-game, but **did not personally write a single line of code**.
 
-### [⬇ Download the latest release](https://github.com/Kukidoo/ilv-CL/releases/latest)
+### [⬇ Download the latest release](https://github.com/fkitsunex/ilv-CL/releases/latest)
 
 <br>
 
