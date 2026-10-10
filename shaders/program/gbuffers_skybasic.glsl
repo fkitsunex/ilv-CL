@@ -1,4 +1,4 @@
-in_out vec3 color;
+in_out vec4 color;
 
 
 
@@ -7,9 +7,11 @@ in_out vec3 color;
 void main() {
 	/* DRAWBUFFERS:5 */
 	#if DO_COLOR_CODED_GBUFFERS == 1
-		vec3 color = vec3(1.0, 1.0, 0.5);
+		vec4 color = vec4(1.0, 1.0, 0.5, 1.0);
 	#endif
-	gl_FragData[0] = vec4(color * 0.5, 1.0);
+	// keep the vertex alpha: the sunrise/sunset fan fades out toward its edges (alpha 1 drew it as a solid,
+	// hard-edged triangle on the horizon with custom skyboxes / sky mods)
+	gl_FragData[0] = vec4(color.rgb * 0.5, color.a);
 }
 
 #endif
@@ -24,13 +26,17 @@ void main() {
 
 void main() {
 	gl_Position = ftransform();
-	color = vec3(gl_Color.rgb);
+	color = gl_Color;
 	bool isStar = gl_Color.r == gl_Color.g && gl_Color.g == gl_Color.b && gl_Color.r > 0.0 && gl_Color.r < 0.51 && gl_Color.a < 0.8; // vanilla Star Detection by Builderb0y (edited by What42)
 	#if CUSTOM_OVERWORLD_SKYBOX == 0
 		if (!isStar) {
 			gl_Position = vec4(1.0);
 			return;
 		}
+		#if defined OVERWORLD && NIGHT_STARS_ENABLED == 1
+			gl_Position = vec4(1.0); // the pack draws its own stars (lib/night_sky.glsl)
+			return;
+		#endif
 	#endif
 	
 	
@@ -43,7 +49,7 @@ void main() {
 			const float starsBrightness = STARS_BRIGHTNESS;
 		#endif
 		float nightPercent = ambientMoonPercent + max(ambientSunrisePercent + ambientSunsetPercent, 0.0);
-		color *= starsBrightness;
+		color.rgb *= starsBrightness;
 	#endif
 	
 	

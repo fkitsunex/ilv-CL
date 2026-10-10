@@ -19,6 +19,9 @@ in_out vec2 texcoord;
 #if COLORED_LIGHTING_ENABLED == 1
 	uniform sampler2D clOutlineSampler; // [enchant outline] see gbuffers_hand
 	uniform usampler2D clOutlineDepthSampler;
+	uniform sampler2D clTransColorSampler; // [translucent overlay] see lib/translucent_overlay.glsl
+	uniform usampler2D clTransDepthSampler;
+	uniform usampler2D clTransAlphaSampler;
 #endif
 
 
@@ -127,6 +130,11 @@ void main() {
 				reflectiveness *= 1.0 - fogAmount;
 			}
 		#endif
+		#if COLORED_LIGHTING_ENABLED == 1
+			// no reflections over a visible enchant outline (its pixel carries the BACKGROUND's gbuffer data)
+			uint reflOutlineCode = texelFetch(clOutlineDepthSampler, texelcoord, 0).r;
+			if (reflOutlineCode > 0u && depth0 >= 1.0 - float(reflOutlineCode - 1u) / 1073741823.0 - 0.000001) reflectiveness = 0.0;
+		#endif
 		if (reflectiveness > 0.01) {
 			#ifdef DISTANT_HORIZONS
 				doReflections(color, depth0, dhDepth0, normal, viewPos, lmcoord, reflectiveness);
@@ -140,16 +148,15 @@ void main() {
 	
 	
 	#if COLORED_LIGHTING_ENABLED == 1
-		// [enchant outline] first-person outline texels stashed by gbuffers_hand (they write no depth), blended
-		// over the FINAL scene here — after water, stained glass, translucent items/entities, reflections and
-		// fog — so translucents behind the outline show through it correctly. Skipped where something is in
-		// front of the outline (the item body, a translucent held item).
-		uint outlineDepthCode = texelFetch(clOutlineDepthSampler, ivec2(gl_FragCoord.xy), 0).r;
-		if (outlineDepthCode > 0u) {
-			float outlineZ = 1.0 - float(outlineDepthCode - 1u) / 1073741823.0; // nearest outline fragment
-			if (texelFetch(DEPTH_BUFFER_ALL, ivec2(gl_FragCoord.xy), 0).r >= outlineZ - 0.000001) {
-				vec3 outlineRgb = texelFetch(clOutlineSampler, ivec2(gl_FragCoord.xy), 0).rgb;
-				color = mix(color, outlineRgb * ENCHANT_OUTLINE_BRIGHTNESS, ENCHANT_OUTLINE_OPACITY);
+		// [translucent overlay] translucent block-entity geometry drawn before deferred (mod beams), lit and
+		// stashed by gbuffers_block: blend it over the finished scene where nothing opaque is in front of it
+		uint transDepthCode = texelFetch(clTransDepthSampler, ivec2(gl_FragCoord.xy), 0).r;
+		if (transDepthCode > 0u) {
+			float transZ = 1.0 - float(transDepthCode - 1u) / 1073741823.0;
+			if (texelFetch(DEPTH_BUFFER_ALL, ivec2(gl_FragCoord.xy), 0).r >= transZ - 0.000001) {
+				vec3 transColor = texelFetch(clTransColorSampler, ivec2(gl_FragCoord.xy), 0).rgb;
+				float transAlpha = 1.0 - exp(-float(texelFetch(clTransAlphaSampler, ivec2(gl_FragCoord.xy), 0).r) / 1024.0);
+				color = mix(color, transColor, transAlpha);
 			}
 		}
 	#endif

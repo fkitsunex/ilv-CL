@@ -41,8 +41,21 @@ in_out vec2 texcoord;
 
 
 void main() {
-	vec3 color = texelFetch(MAIN_TEXTURE, texelcoord, 0).rgb * 2.0;
+	vec4 rawColor0 = texelFetch(MAIN_TEXTURE, texelcoord, 0);
+	vec3 color = rawColor0.rgb * 2.0;
 	float depth = texelFetch(DEPTH_BUFFER_ALL, texelcoord, 0).r;
+	// [foreign translucent] Geometry drawn by MOD shaders that bypass the pack (e.g. Create Simulated lasers,
+	// rendered with a Veil shader) writes colour + depth but none of our gbuffer data. Over the sky that pixel
+	// used to be lit as a surface with no light -> a near-black laser. Such pixels (depth set, data buffer still
+	// at its cleared zero) are treated as a translucent layer: the background (sky / Distant Horizons) is
+	// rendered as if the pixel were empty and the mod's colour is laid on top. colortex0 is cleared to
+	// transparent black each frame, so it holds exactly colour*alpha plus the (2-bit) alpha of that layer.
+	bool emptySkyPixel = depth == 1.0; // nothing of the world drawn here (sky-mod layers may be, see below)
+	vec4 foreignLayer = vec4(0.0);
+	if (depth < 1.0 && !depthIsHand(depth) && all(equal(texelFetch(OPAQUE_DATA_TEXTURE, texelcoord, 0), vec4(0.0)))) {
+		foreignLayer = rawColor0;
+		depth = 1.0;
+	}
 	vec3 viewPos = screenToView(vec3(texcoord, depth + 0.38 * float(depthIsHand(depth))));
 	#ifdef DISTANT_HORIZONS
 		float dhDepth = texelFetch(DH_DEPTH_BUFFER_ALL, texelcoord, 0).r;
@@ -97,6 +110,9 @@ void main() {
 				const float objectsMixingSlope = 32.0;
 			#endif
 			vec3 skyObjects = texelFetch(SKY_OBJECTS_TEXTURE, texelcoord, 0).rgb * 2.0;
+			#ifdef CUSTOM_SKYBOX
+				skyObjects *= 0.0; // custom skyboxes: the sky pass REPLACES the sky on empty pixels (below), not added
+			#endif
 			skyObjects *= (1.0 - 0.6 * skyColor) * clamp(1.0 - objectsMixingSlope * (1.0 - fogDistance), 0.0, 1.0);
 			#if defined OVERWORLD && CUSTOM_OVERWORLD_SKYBOX == 1
 				skyObjects *= OVERWORLD_SKYBOX_BRIGHTNESS;
@@ -112,6 +128,33 @@ void main() {
 	}
 	
 	
+	#ifdef CUSTOM_SKYBOX
+		// [custom skyboxes / sky mods] On a pixel where nothing of the world was drawn, show the sky exactly as
+		// the game and its mods drew it: colortex5 = the sky pass (vanilla dome — recoloured by mods like Cirrus —
+		// sunset fan, sun, moon, stars, skybox textures); colortex0 = layers that sky mods draw with their OWN
+		// shaders (Cirrus aurora / Milky Way / stars), cleared to black each frame. Where the sky pass drew
+		// nothing (alpha 0) the computed sky stays. (Adding the dome ON TOP of the computed sky washed it white.)
+		#ifdef DISTANT_HORIZONS
+			bool customSkyPixel = emptySkyPixel && dhDepth == 1.0;
+		#else
+			bool customSkyPixel = emptySkyPixel;
+		#endif
+		if (customSkyPixel) {
+			vec4 skyPass = texelFetch(SKY_OBJECTS_TEXTURE, texelcoord, 0);
+			vec3 skyPassColor = skyPass.rgb * 2.0;
+			#if defined OVERWORLD
+				skyPassColor *= OVERWORLD_SKYBOX_BRIGHTNESS;
+			#elif defined NETHER
+				skyPassColor *= NETHER_SKYBOX_BRIGHTNESS;
+			#elif defined END
+				skyPassColor *= END_SKYBOX_BRIGHTNESS;
+			#endif
+			// coverage is binary: colortex5's alpha is only 2 bits and the additive sun / moon quads leave partial
+			// alpha, which let the computed sky show through as a square around them
+			float skyPassCover = step(0.01, skyPass.a);
+			skyColor = mix(skyColor, skyPassColor + getNightSkyLayers(normalize(screenToView(vec3(texcoord, 1.0)))), skyPassCover) + rawColor0.rgb;
+		}
+	#endif
 	if (skyAmount == 1.0) {
 		color = skyColor;
 	} else {
@@ -213,6 +256,12 @@ void main() {
 		
 	}
 	
+	
+	// [foreign translucent] lay the mod's layer over the background computed above. The layer is premultiplied
+	// (colour * alpha over transparent black); it lands BEFORE the pack's post-processing (saturation, contrast,
+	// tonemap), which made it read noticeably more solid than in vanilla, so it's thinned a bit (same hue).
+	const float foreignOpacity = 0.55;
+	color = color * (1.0 - foreignLayer.a * foreignOpacity) + foreignLayer.rgb * foreignOpacity;
 	
 	/* DRAWBUFFERS:0 */
 	color *= 0.5;

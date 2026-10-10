@@ -95,6 +95,7 @@ uniform bool isSun;
 	const float inPaleGarden = 0.0;
 #endif
 uniform float inSnowyBiome;
+uniform float netherFogMax;
 
 uniform float lightningFlashAmount;
 
@@ -145,6 +146,7 @@ bool isSun = (isDay && !isOtherLightSource) || (!isDay && isOtherLightSource);
 
 const float inPaleGarden = 0.0;
 const float inSnowyBiome = 0.0;
+const float netherFogMax = 0.2;
 
 const float lightningFlashAmount = 0.0;
 

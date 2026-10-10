@@ -57,7 +57,21 @@ void main() {
 	// texels: force the outer layer's solid detail (alpha ~1) fully opaque so it occludes the inner, and
 	// discard the fully-transparent texels — while leaving GENUINE mid-alpha (slimes/ghasts ~0.4-0.6) to
 	// keep blending, and never touching nametags (their own handling is below).
-	if (!isNametag) {
+	if (entityId == 10002) {
+		// [player skins] Semi-transparent skin texels (outer layer, or the base layer of skins that use ETF's
+		// skin transparency) were alpha-blended, which only works when the layers are drawn back to front.
+		// Under shaders they aren't sorted (and Entity Model Features changes the part order), so a layer
+		// drawn first hid the one behind it through depth: see-through arms, hidden inner layers — the same
+		// in Complementary. Draw them as dithered coverage instead: every texel is either fully drawn (with
+		// depth) or discarded, so the order no longer matters; the temporal filter smooths the dither back
+		// into the same translucency.
+		if (color.a < 0.1) discard;
+		if (color.a < 0.99) {
+			float skinDither = fract(bayer64(gl_FragCoord.xy) + 0.61803398875 * float(frameCounter % 3600));
+			if (skinDither >= color.a) discard;
+		}
+		color.a = 1.0;
+	} else if (!isNametag) {
 		if (color.a < 0.1) discard;
 		else if (color.a > 0.7) color.a = 1.0;
 	}
@@ -125,6 +139,10 @@ void main() {
 	if (isAfterDeferred > 0.5 && !isNametag) {
 		float _inSunlightAmount;
 		doFshLighting(color.rgb, _inSunlightAmount, lmcoord.x, lmcoord.y, (isEnchanted || isEntityFire) ? 0.3 : specularness, 0.0, viewPos, normal, gl_FragCoord.z);
+		// translucent entity drawn over the finished scene (separateEntityDraws): don't let the reflection pass
+		// paint the reflection of whatever is behind it (e.g. water) on top of it
+		reflectiveness = 0.0;
+		specularness = 253.0 / 255.0;
 	}
 	
 	
@@ -166,18 +184,19 @@ void main() {
 	lmcoord  = (gl_TextureMatrix[1] * gl_MultiTexCoord1).xy;
 	adjustLmcoord(lmcoord);
 	glcolor = gl_Color;
-	#ifdef NETHER
-		// remove entity shadows, may cause other problems
-		if (glcolor.a < 1.0) {
-			gl_Position = vec4(1.0);
-			return;
-		}
-	#endif
 	
 	#if PBR_TYPE != 0
 		vec3 normal;
 	#endif
 	normal = gl_NormalMatrix * gl_Normal;
+	#ifdef NETHER
+		// remove entity shadows (flat translucent ground decals). Only up-facing ones: culling EVERY quad with
+		// vertex alpha < 1 also removed translucent mod geometry (thruster / laser beams) in the Nether.
+		if (glcolor.a < 1.0 && dot(normalize(normal), normalize(gbufferModelView[1].xyz)) > 0.9) {
+			gl_Position = vec4(1.0);
+			return;
+		}
+	#endif
 
 	// [entity shadow blob fix] With real-time shadows OFF, MC draws the vanilla entity shadow (a flat
 	// translucent ground decal under mobs). Our deferred pipeline can't multiply it onto the ground, so

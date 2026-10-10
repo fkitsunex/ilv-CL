@@ -39,9 +39,17 @@ It's based on **I Like Vanilla v1.4.0b**. Everything else (style, settings, look
 - The first-person **outline** keeps its translucency and is tinted with the glint color, and translucent blocks and entities behind it render correctly.
 - An enchanted item in your hand casts a small **purple light** (adjustable or off), which mixes correctly with a light source in your other hand.
 
+### Sky
+- **Night sky:** an aurora (optionally only in cold biomes), the Milky Way and a vanilla-sized star field that turns with the sun. All of it can be adjusted in the Night Sky menu.
+- **End sky:** a dark void with slowly drifting nebulae and still stars, fading to black below the islands.
+- **Custom skyboxes / sky mods** (e.g. Cirrus): with Custom Skyboxes on, the sky is shown exactly as the game draws it, and fog and reflections follow it.
+- At night the fog matches the dark sky instead of glowing grey on the horizon.
+
 ### Water, reflections and fog
 - Distant Horizons water reflects and is covered by atmospheric fog.
 - Breaking overlays, particles, held items, nametags and mod UI no longer leak into reflections (this fixes the chest-breaking "mirror").
+- Translucent mod geometry (Create Gadgets & Gizmos thrusters, Create Simulated lasers) renders correctly over the sky, water and Distant Horizons terrain.
+- Night Vision in the Nether brightens the lighting without turning the fog into a glaring wall.
 - Cleaner glass, ice and underwater reflections.
 - The Darkness effect fades to dark instead of flashing white.
 
@@ -49,7 +57,7 @@ It's based on **I Like Vanilla v1.4.0b**. Everything else (style, settings, look
 - labPBR metal fix (F0 230–255 values are metal indices, not reflectance).
 - Burning mobs' flames render at vanilla brightness.
 - Breaking chests and other block entities shows dark cracks (not white).
-- No bright "shadow blob" under mobs with shadows off. Nametags render flat. The player's outer skin layer is no longer see-through.
+- No bright "shadow blob" under mobs with shadows off. Nametags render flat. Player skins with semi-transparent pixels (outer layers, ETF skin transparency) render correctly.
 - Create contraptions no longer turn grass-green. Wildflowers and plant stems have correct brightness.
 
 ### Settings

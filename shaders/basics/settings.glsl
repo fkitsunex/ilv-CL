@@ -6,8 +6,10 @@
 
 // optifine settings (DON'T DELETE)
 /*
-const int   colortex0Format       = RGB10_A2;
-const bool  colortex0Clear        = false;
+// colortex0: RGBA16 (was RGB10_A2) - mod layers over the sky need a real alpha (deferred1 'foreign translucent')
+const int   colortex0Format       = RGBA16;
+const bool  colortex0Clear        = true;
+const vec4  colortex0ClearColor   = vec4(0.0, 0.0, 0.0, 0.0);
 const int   colortex1Format       = RGB10_A2;
 const bool  colortex1Clear        = false;
 const int   colortex2Format       = RGBA16;
@@ -20,6 +22,7 @@ const int   colortex4Format       = R11F_G11F_B10F;
 const bool  colortex4Clear        = false;
 const int   colortex5Format       = RGB10_A2;
 const bool  colortex5Clear        = true;
+const vec4  colortex5ClearColor   = vec4(0.0, 0.0, 0.0, 0.0);
 const int   colortex6Format       = RG16;
 const bool  colortex6Clear        = false;
 const int   colortex7Format       = R16;

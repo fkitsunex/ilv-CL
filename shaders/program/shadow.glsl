@@ -89,6 +89,13 @@ void main() {
 	#if COLORED_LIGHTING_ENABLED == 1
 		updateVoxelIds(playerPos, materialId); // every vertex: partial-block votes (ids are written once per quad inside)
 	#endif
+	#if SHADOWS_TYPE < 2
+		// [perf] no sun shadows in this dimension (the Nether always; elsewhere when shadows are off): the shadow
+		// pass only runs to voxelise the coloured-light volume, and the shadow map is never read. Collapse every
+		// triangle to a point after voxelising, so nothing is rasterised or shaded.
+		gl_Position = vec4(1.0);
+		return;
+	#endif
 
 	
 	#if EXCLUDE_FOLIAGE == 1

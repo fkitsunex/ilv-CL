@@ -114,6 +114,13 @@ void addReflection(inout vec3 color, vec3 viewPos, vec3 normal, vec2 lmcoord, sa
 	vec2 reflectionPos;
 	float hitFade;
 	raytrace(reflectionPos, hitFade, viewPos, reflectionDirection, normal);
+	// Overlay rejection: tagged (253/255 no-reflect sentinel) pixels — particles, held items,
+	// nametags, mod UI — drop the SSR and fall back to the background.
+	// (decided up front so the lazily computed background below knows whether it's needed)
+	if (hitFade > 0.0) {
+		float hitSpec = unpack_2x8(texelFetch(OPAQUE_DATA_TEXTURE, ivec2(reflectionPos * viewSize), 0).y).y;
+		if (abs(hitSpec - 252.5 / 255.0) < 0.004) hitFade = 0.0; // 253 no-reflect + 252 fullbright (enchanted held items)
+	}
 
 	float fresnel = 1.0 - abs(dot(normalize(viewPos), normal));
 	fresnel *= fresnel;
@@ -121,8 +128,11 @@ void addReflection(inout vec3 color, vec3 viewPos, vec3 normal, vec2 lmcoord, sa
 	reflectionStrength *= 1.0 - REFLECTION_FRESNEL * (1.0 - fresnel);
 
 	// ===== Atmospheric background reflection =====
-	// Base: directional sky (already includes horizon gradient + sun glow).
-	vec3 background = getSkyColor(reflectionDirection, true);
+	// Base: directional sky (already includes horizon gradient + sun glow). [perf] computed only when it's
+	// actually used: not where the on-screen sky sample below replaces it, nor under a full SSR hit (the
+	// night-sky layers make getSkyColor costly) — the result is identical.
+	vec3 background = vec3(0.0);
+	bool needSkyColor = true;
 
 	// The sky-sample and sun/moon specular only make sense above water — underwater there is no sky
 	// or sun to reflect, and applying them tinted the reflections white. Skip them when submerged;
@@ -146,9 +156,15 @@ void addReflection(inout vec3 color, vec3 viewPos, vec3 normal, vec2 lmcoord, sa
 				// The 253/255 no-reflect tag rejects tagged overlays (particles, held items, mod UI)
 				// drawn over the sky so they don't bleed into the reflection.
 				float skySpec = unpack_2x8(texelFetch(OPAQUE_DATA_TEXTURE, ivec2(skySp.xy * viewSize), 0).y).y;
-				if (abs(skySpec - 252.5 / 255.0) >= 0.004) background = texture2DLod(texture, skySp.xy, 0.0).rgb * 2.0;
+				if (abs(skySpec - 252.5 / 255.0) >= 0.004) {
+					background = texture2DLod(texture, skySp.xy, 0.0).rgb * 2.0;
+					needSkyColor = false;
+				}
 			}
 		}
+
+		if (needSkyColor && hitFade < 1.0) background = getSkyColor(reflectionDirection, true);
+		needSkyColor = false;
 
 		// Sun / moon specular highlight — bright sparkle that bridges SSR and sky smoothly.
 		vec3 lightDir = normalize(shadowLightPosition);
@@ -157,6 +173,9 @@ void addReflection(inout vec3 color, vec3 viewPos, vec3 normal, vec2 lmcoord, sa
 		vec3 lightCol = sunAngle < 0.5 ? vec3(1.0, 0.95, 0.8) : vec3(0.55, 0.7, 1.0);
 		background += spec * lightCol * (sunLightBrightness + moonLightBrightness) * 3.0;
 	}
+
+	// underwater (no sky sample above): only needed where the SSR doesn't fully cover it
+	if (needSkyColor && hitFade < 1.0) background = getSkyColor(reflectionDirection, true);
 
 	float maxBrightness = max(lmcoord.x * 0.75, lmcoord.y);
 	#ifdef END
@@ -174,11 +193,6 @@ void addReflection(inout vec3 color, vec3 viewPos, vec3 normal, vec2 lmcoord, sa
 
 	vec3 reflectionColor = background;
 	if (hitFade > 0.0) {
-		// Overlay rejection: tagged (253/255 no-reflect sentinel) pixels — particles, held items,
-		// nametags, mod UI — drop the SSR and fall back to the background.
-		float hitSpec = unpack_2x8(texelFetch(OPAQUE_DATA_TEXTURE, ivec2(reflectionPos * viewSize), 0).y).y;
-		if (abs(hitSpec - 252.5 / 255.0) < 0.004) hitFade = 0.0; // 253 no-reflect + 252 fullbright (enchanted held items)
-
 		// `texture` is the caller's scene source (composite4 passes the final image, colortex0).
 		vec3 ssr = texture2DLod(texture, reflectionPos, 0.0).rgb * 2.0;
 		float reflectionDepth = texelFetch(DEPTH_BUFFER_WO_TRANS, ivec2(reflectionPos * viewSize), 0).r;

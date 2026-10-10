@@ -46,6 +46,11 @@ void doTemporalFilter(inout vec3 color, float depth, float dhDepth, vec2 prevCoo
 	float linearDepth = toLinearDepth(depth);
 	float blendAmount = blendConstant + exp(-velocityAmount) * (blendVariable + sqrt(linearDepth * far) * depthFactor);
 	blendAmount = clamp(blendAmount, blendMin, blendMax);
+	// [entity fire] the flame texture animates every tick and its white core texels are single pixels: blending
+	// ~80% of the previous frame (whose flame there was orange — inside the neighbour clamp range) kept them
+	// from ever reaching white. Burning-mob flames (251/255 flag) take almost no history, like vanilla.
+	float specularnessFlag = unpack_2x8(texelFetch(OPAQUE_DATA_TEXTURE, texelcoord, 0).y).y;
+	if (abs(specularnessFlag - 251.0 / 255.0) < 0.002 && !depthIsHand(depth)) blendAmount = min(blendAmount, 0.1);
 	
 	color = mix(color, prevColor, blendAmount);
 	

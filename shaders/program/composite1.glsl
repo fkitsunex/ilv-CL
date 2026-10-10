@@ -28,6 +28,8 @@ flat in_out float extraFogDist;
 	// floodfill, so it must NOT define this and uses the delayed+compensated read instead.)
 	#define CL_FRESH_READ
 	#include "/lib/colored_lighting/applyColoredLight.glsl"
+	uniform sampler2D clOutlineSampler; // [enchant outline] see gbuffers_hand / lib/enchant_outlines.glsl
+	uniform usampler2D clOutlineDepthSampler;
 #endif
 #if DEPTH_SUNRAYS_ENABLED == 1
 	#include "/lib/sunrays_depth.glsl"
@@ -209,7 +211,10 @@ void main() {
 	if (CL_FOG_GLOW_STRENGTH > 0.001 && isEyeInWater == 0 && atmoFogAmount > 0.002) {
 		float clDist = length(playerPos);
 		float clRayLen = min(clDist, float(COLORED_LIGHTING_DIST) * 0.9);
-		if (clRayLen > 0.5) {
+		// (no minimum ray length: a `> 0.5` cutoff drew a hard circle of radius 0.5 around the camera on any
+		// surface closer than that — visible as an arc on a wall you stand against in dense cave / Nether
+		// fog. The glow is applied as `* atmoFogAmount`, so it already fades to 0 smoothly as the ray shrinks.)
+		if (clRayLen > 0.0001) {
 			vec3 clStep = (playerPos / max(clDist, 0.001)) * (clRayLen / float(CL_FOG_GLOW_SAMPLES));
 			vec3 clPos = clStep * bayer64(gl_FragCoord.xy);
 			vec3 clGlow = vec3(0.0);
@@ -238,6 +243,8 @@ void main() {
 					// darken the glow by the blindness/darkness effects too — the base fog above is already
 					// multiplied by these, but the glow is added AFTER, so without this it stays bright and
 					// looks fullbright while everything else goes dark under the Darkness effect.
+					// ramp in from the early-out threshold above, so skipping thin fog leaves no edge at all
+					intensity *= smoothstep(0.002, 0.006, atmoFogAmount);
 					atmoFogColor += clHue * (intensity * CL_FOG_GLOW_STRENGTH) * ((1.0 - blindness) * (1.0 - clDarkFade));
 				}
 			}
@@ -248,6 +255,25 @@ void main() {
 	color = mix(vec3(getLum(color)), color, 1.0 + atmoFogAmount * 0.5);
 	color *= 1.0 - min(atmoFogAmount * fogDarken, 1.0);
 	color += atmoFogColor * atmoFogAmount;
+	
+	#if COLORED_LIGHTING_ENABLED == 1
+		// [enchant outline] first-person outline texels stashed by gbuffers_hand (they write no depth). Blended
+		// HERE — after every translucent pass, but before underwater waviness (composite3) — and fogged at the
+		// HAND's distance (≈0), so underwater it gets the same water tint / waves as the item body instead of
+		// floating over the scene untinted. Skipped where something (the item body) is in front of it.
+		uint outlineDepthCode = texelFetch(clOutlineDepthSampler, texelcoord, 0).r;
+		if (outlineDepthCode > 0u) {
+			float outlineZ = 1.0 - float(outlineDepthCode - 1u) / 1073741823.0; // nearest outline fragment
+			if (texelFetch(DEPTH_BUFFER_ALL, texelcoord, 0).r >= outlineZ - 0.000001) {
+				vec3 outlineRgb = texelFetch(clOutlineSampler, texelcoord, 0).rgb * ENCHANT_OUTLINE_BRIGHTNESS;
+				float handFog = 1.0 - exp(-fogDensity * extraFogDist);
+				outlineRgb = mix(vec3(getLum(outlineRgb)), outlineRgb, 1.0 + handFog * 0.5);
+				outlineRgb *= 1.0 - min(handFog * fogDarken, 1.0);
+				outlineRgb += atmoFogColor * handFog;
+				color = mix(color, outlineRgb, ENCHANT_OUTLINE_OPACITY);
+			}
+		}
+	#endif
 
 	
 	#if defined OVERWORLD && HBD_ENABLED == 1

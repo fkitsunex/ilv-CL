@@ -1,7 +1,28 @@
 #ifndef INCLUDE_GET_SKY_COLOR
 #define INCLUDE_GET_SKY_COLOR
 
+#include "/lib/night_sky.glsl"
 
+
+
+#ifndef INCLUDE_VANILLA_SKY_UNIFORMS
+#define INCLUDE_VANILLA_SKY_UNIFORMS
+	// vanilla sky / fog colour as the game (and sky mods like Cirrus, which recolour them) computed it
+	vec3 vanillaSkyColor() { return skyColor; }
+	vec3 vanillaFogColor() { return fogColor; }
+	// [nether fog] Night Vision makes the game rescale the fog colour so its brightest channel hits 1
+	// (fog * ((1 - nv) + nv / max)), which turned the Nether fog into a glaring wall. Undo that, so Night Vision
+	// brightens only the lighting. The original max isn't recoverable at full strength, so it comes from the
+	// biome (netherFogMax, shaders.properties); while the effect fades (nv < 1) it's computed exactly.
+	vec3 netherFogColor() {
+		float nv = clamp(nightVision, 0.0, 1.0);
+		if (nv < 0.001) return fogColor;
+		float maxNv = max(fogColor.r, max(fogColor.g, fogColor.b));
+		float exactMax = (maxNv - nv) / max(1.0 - nv, 0.0001);
+		float origMax = mix(clamp(exactMax, 0.01, 1.0), netherFogMax, smoothstep(0.85, 0.97, nv));
+		return fogColor / ((1.0 - nv) + nv / origMax);
+	}
+#endif
 
 vec3 getSkyColor(vec3 viewDir, const bool includeLightning) {
 	vec3 skyColor;
@@ -37,7 +58,9 @@ vec3 getSkyColor(vec3 viewDir, const bool includeLightning) {
 			skyColor *= 1.0 - 0.4 * sunriseSunsetPercent;
 		#endif
 		horizonColor = mix(horizonColor, vec3(0.1 + 0.25 * dayPercent), inPaleGarden);
-		float horizonAmount = 1.0 - upDot;
+		// [night sky] no light horizon band at night (it made the fog grey against a black sky) — must stay the
+		// same as in /utils/getFogColor.glsl
+		float horizonAmount = 1.0 - max(upDot, 0.5 * (1.0 - dayPercent));
 		#if HORIZON_FADE_STRENGTH > 0
 			horizonAmount *= horizonAmount;
 		#endif
@@ -82,9 +105,19 @@ vec3 getSkyColor(vec3 viewDir, const bool includeLightning) {
 		float rainAmount = rainStrength * SKY_WEATHER_DESATURATION;
 		rainAmount *= 1.0 - (1.0 - dayPercent) * (1.0 - dayPercent);
 		skyColor = mix(skyColor, vec3(0.8, 0.9, 1.0) * SKY_WEATHER_BRIGHTNESS * dayPercent, rainAmount);
+		#if CUSTOM_OVERWORLD_SKYBOX == 1
+			// custom skyboxes / sky mods: follow the game's own sky -> fog gradient (Cirrus recolours these), so
+			// fog, reflections and the DH border match the sky that's actually drawn
+			float vanillaHorizonAmount = 1.0 - upDot; // the game's own gradient (fog = vanilla fog colour here)
+			vanillaHorizonAmount *= vanillaHorizonAmount;
+			vanillaHorizonAmount *= vanillaHorizonAmount;
+			skyColor = mix(vanillaSkyColor(), vanillaFogColor(), vanillaHorizonAmount);
+		#endif
 		
 		if (includeLightning) {
 			skyColor += lightningFlashAmount * LIGHTNING_BRIGHTNESS * 0.25;
+			// [night sky] aurora, Milky Way, stars (the actual sky + its reflections; not the fog colour)
+			skyColor += getNightSkyLayers(viewDir);
 		}
 		
 		vec3 playerDir = mat3(gbufferModelViewInverse) * viewDir;
@@ -97,7 +130,8 @@ vec3 getSkyColor(vec3 viewDir, const bool includeLightning) {
 		#elif UNDERGROUND_FOG_COLOR_TYPE == 2
 			#define FOG_COLOR vec3(UNDERGROUND_FOG_BRIGHTNESS * 0.5)
 		#endif
-		skyColor = mix(skyColor, FOG_COLOR, darkenAmount);
+		// below the horizon the sky DARKENS towards the cave fog — never brightens (the grey lit up the night sky)
+		skyColor = mix(skyColor, min(FOG_COLOR, skyColor), darkenAmount);
 		
 		#if CUSTOM_OVERWORLD_SKYBOX == 1
 			skyColor *= CUSTOM_OVERWORLD_SKY_BRIGHTNESS;
@@ -111,7 +145,7 @@ vec3 getSkyColor(vec3 viewDir, const bool includeLightning) {
 	#elif defined NETHER
 		
 		// must stay the same as in /utils/getFogColor.glsl
-		skyColor = fogColor;
+		skyColor = netherFogColor();
 		skyColor = mix(vec3(getLum(skyColor)), skyColor, NETHER_SKY_FOG_SATURATION);
 		skyColor = NETHER_SKY_BASE_COLOR + NETHER_SKY_FOG_INFLUENCE * skyColor;
 		skyColor *= NETHER_SKY_TINT_COLOR;
@@ -119,13 +153,7 @@ vec3 getSkyColor(vec3 viewDir, const bool includeLightning) {
 	#elif defined END
 		
 		#if CUSTOM_END_SKYBOX == 0
-			vec3 worldDir = mat3(gbufferModelViewInverse) * viewDir;
-			float brightness = 0.0;
-			brightness += valueNoise(worldDir * 90.0 * 0.125) * 0.5;
-			brightness += valueNoise(worldDir * 90.0 * 0.25 ) * 0.25;
-			brightness += valueNoise(worldDir * 90.0 * 0.5  ) * 0.125;
-			brightness += valueNoise(worldDir * 90.0 * 1.0  ) * 0.0625;
-			skyColor = mix(END_SKY_COLOR * 0.5, END_STATIC_COLOR, brightness * 0.5);
+			skyColor = getEndSky(normalize(mat3(gbufferModelViewInverse) * viewDir)); // lib/night_sky.glsl
 		#elif CUSTOM_END_SKYBOX == 1
 			skyColor = vec3(0.0);
 		#endif

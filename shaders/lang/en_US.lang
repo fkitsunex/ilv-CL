@@ -2603,3 +2603,31 @@ option.CL_DAY_BOOST=Colored Light Day Boost
 option.CL_NIGHT_BOOST=Colored Light Night Boost
 option.CL_DAY_BOOST.comment=How much colored light resists being washed out by daylight (1.0 = vanilla).
 option.CL_NIGHT_BOOST.comment=How much colored light is boosted at night so it pops.
+
+# [night sky]
+screen.NIGHT_SKY_MENU=Night Sky
+option.AURORA_ENABLED=Aurora
+option.AURORA_ENABLED.comment=Procedural northern lights at night (ILV-CL's own, no mod needed)
+option.AURORA_BRIGHTNESS=Aurora Brightness
+option.AURORA_SPEED=Aurora Motion Speed
+option.AURORA_COLD_BIOMES_ONLY=Aurora Only In Snowy Biomes
+option.AURORA_COLD_BIOMES_ONLY.comment=Show the aurora only while you are in a biome where it snows
+option.MILKY_WAY_ENABLED=Milky Way
+option.MILKY_WAY_ENABLED.comment=A soft galactic band across the night sky that turns with the stars
+option.MILKY_WAY_BRIGHTNESS=Milky Way Brightness
+option.NIGHT_STARS_ENABLED=Procedural Stars
+option.NIGHT_STARS_ENABLED.comment=Fine twinkling stars that replace vanilla's square stars (denser along the Milky Way)
+option.NIGHT_STARS_BRIGHTNESS=Stars Brightness
+option.NIGHT_STARS_DENSITY=Stars Density
+value.AURORA_ENABLED.0=Off
+value.AURORA_ENABLED.1=On
+value.AURORA_COLD_BIOMES_ONLY.0=Off
+value.AURORA_COLD_BIOMES_ONLY.1=On
+value.MILKY_WAY_ENABLED.0=Off
+value.MILKY_WAY_ENABLED.1=On
+value.NIGHT_STARS_ENABLED.0=Off
+value.NIGHT_STARS_ENABLED.1=On
+option.END_NEBULA_BRIGHTNESS=End Nebula Brightness
+option.END_NEBULA_BRIGHTNESS.comment=Drifting nebulae in the End sky (End Static color is their base tint)
+option.END_NEBULA_SPEED=End Nebula Drift Speed
+option.END_STARS_BRIGHTNESS=End Stars Brightness

@@ -3,6 +3,23 @@
 ILV-CL is a fork of I Like Vanilla v1.4.0b by What42Pizza. All ILV-CL changes were written by Claude (Anthropic's AI).
 The original I Like Vanilla changelog follows below.
 
+- ILV-CL v0.6.1
+  - New: Overworld night sky — aurora (optionally cold biomes only), the Milky Way and a vanilla-sized star field that turns with the sun; Night Sky menu with brightness / speed / density sliders
+  - New: reworked End sky — a dark void with slowly drifting nebulae and still stars, fading to black below the islands (nebula brightness / speed and star brightness sliders)
+  - New: Custom Skyboxes setting shows the sky exactly as the game and sky mods (e.g. Cirrus) draw it, with fog, reflections and the Distant Horizons border following it
+  - Mod beams (Create Gadgets & Gizmos thrusters, Create Simulated lasers and other translucent mod geometry) render correctly over the sky, water and Distant Horizons terrain and blend with each other
+  - Night fog is no longer brighter than the night sky (the light horizon band fades out at night)
+  - Night Vision in the Nether brightens the lighting only — the fog no longer turns into a glaring wall
+  - Colored fog glow no longer clips when the camera is close to blocks
+  - Enchanted items render correctly underwater and in the extended grip (glint included), and no longer light up inconsistently near colored light
+  - Burning mobs' flames keep their white core (no longer smeared by anti-aliasing)
+  - Player skins with semi-transparent pixels (outer layers, ETF skin transparency) render correctly instead of see-through limbs / missing layers
+  - Translucent entities and block entities drawn over the finished scene no longer show reflections of what's behind them; translucent mod geometry is no longer removed in the Nether
+  - Performance: the colored-light floodfill skips air and solid cells' unneeded work, the Nether shadow pass no longer rasterises (it only feeds the colored-light volume), and reflections only compute the sky color when it's visible
+  - Profiles refreshed (night sky, End sky, cloud transparency, Night Vision and other tweaked defaults)
+
+<br>
+
 - ILV-CL v0.6 (first public release)
   - Colored voxel lighting: floodfill colored light from every light source, in every dimension, independent of real-time shadows
   - 24 per-source hue + saturation sliders, master strength / saturation / reach / volume size, colored fog glow, day & night boosts

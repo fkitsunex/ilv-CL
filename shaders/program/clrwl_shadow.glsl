@@ -42,6 +42,10 @@ void main() {
 		}
 	#endif
 	
+	#if SHADOWS_TYPE < 2
+		gl_Position = vec4(1.0); // [perf] no sun shadows here: the shadow map is never read (see shadow.glsl)
+		return;
+	#endif
 	#if COLORED_LIGHTING_ENABLED == 1
 		gl_Position = shadowProjection * shadowModelView * vec4(playerPos, 1.0);
 	#else

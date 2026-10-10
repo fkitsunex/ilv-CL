@@ -440,7 +440,10 @@ void doFshLighting(inout vec3 color, out float inSunlightAmount, float blockBrig
 	lighting *= 1.0 + sideShading;
 	
 	// [enchant fullbright] enchanted item texels (Enchantment Outlines) show their texture unlit
-	lighting = mix(lighting, max(lighting, vec3(fshFullbrightLevel)), fshFullbright);
+	// Fullbright = not TINTED by the light around it (a coloured source used to wash enchanted items and their
+	// glint into its own hue, more or less depending on the light at the camera): keep only the overall
+	// brightness of the lighting, at least the level and never above max(level, 1) so the glint can't clip.
+	lighting = mix(lighting, vec3(clamp(getLum(lighting), fshFullbrightLevel, max(fshFullbrightLevel, 1.0))), fshFullbright);
 	#if DO_COLOR_CODED_GBUFFERS == 1
 		lighting = vec3(1.0);
 	#endif

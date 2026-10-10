@@ -74,7 +74,8 @@ void main() {
 	
 	// ======== FXAA ======== //
 	#if FXAA_ENABLED == 1
-		doFxaa(color, MAIN_TEXTURE);
+		// burning-mob flames (251/255 flag): keep their single-texel white core crisp, like vanilla
+		if (abs(unpack_2x8(texelFetch(OPAQUE_DATA_TEXTURE, texelcoord, 0).y).y - 251.0 / 255.0) >= 0.002) doFxaa(color, MAIN_TEXTURE);
 	#endif
 	
 	// ======== TEMPORAL FILTER ======== //

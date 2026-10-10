@@ -142,13 +142,20 @@ void main() {
 	if (voxelId == 255u && copycatBits != 0u) voxelId = CL_VOXEL_COPYCAT_BASE + uint(findLSB(copycatBits));
 	vec3 emission = vec3(0.0);
 	vec3 translucency = vec3(0.0);
+	// [perf] classify first: air (0), solid (1 / unvoted 255) and unknown modded blocks (255) never read
+	// emission or translucency below, so the lookup tree + ~40-step recolour chain only runs for registered /
+	// dynamic / copycat cells — a small fraction of the volume (bit-identical result)
+	bool solid = voxelId == 1u || (voxelId == 255u && voteBits == 0u);
+	bool needsData = voxelId != 0u && voxelId != 1u && voxelId != 255u;
+	float emitLevel = 0.0;
+	if (needsData) {
 	#define GET_EMISSION
 	#define GET_TRANSLUCENCY
 	#include "/generated/voxelDatas.glsl"
 
 	// reserved DYNAMIC ids (never produced by the block-datas generator, which stays far below 250):
 	// written by gbuffers_entities for glowing mobs and enchanted items held by players/mobs.
-	float emitLevel = clEmitterLevel(emission);
+	emitLevel = clEmitterLevel(emission);
 	if (voxelId == CL_VOXEL_GLOW_SQUID) {
 		emission = vec3(0.1, 0.9, 1.1); translucency = vec3(1.0); emitLevel = 15.0;   // -> sculk-sensor cyan
 	} else if (voxelId == CL_VOXEL_MAGMA_CUBE) {
@@ -212,12 +219,16 @@ void main() {
 	// enchanted item held by a player / mob: a small purple glow (strength from CL_ENCHANT_STRENGTH;
 	// crosses the artificial-light threshold so it glows even with no vanilla light around).
 	if (voxelId == CL_VOXEL_ENCHANT) emission = CL_ENCHANT_COLOR * (1.5 + 4.0 * CL_ENCHANT_STRENGTH) * step(0.001, CL_ENCHANT_STRENGTH);
+	} // needsData
 
 	// diffuse light in from the 6 face neighbours (averaging — dividing by slightly
 	// more than 6 makes the light gently attenuate as it fills the open space over many cells).
 	// solid neighbours feed back this cell's own value so they don't absorb the light (see above).
 	vec4 self = samplePrev(pos);
-	vec4 diffuse =
+	// [perf] a solid cell's light is 0 whatever its neighbours hold, so it skips the 6-neighbour diffusion
+	// (up to 18 fetches) — most of the volume underground
+	vec4 diffuse = vec4(0.0);
+	if (!solid) diffuse =
 		( neighbourLight(pos + ivec3( 1,  0,  0), self)
 		+ neighbourLight(pos + ivec3(-1,  0,  0), self)
 		+ neighbourLight(pos + ivec3( 0,  1,  0), self)
@@ -229,7 +240,6 @@ void main() {
 
 	// classify by voxel id: 0 = air, 1 = generic solid (occluder), 255 = unknown modded block,
 	// 2..254 = registered blocks (only those carry real emission/translucency data).
-	bool solid = voxelId == 1u || (voxelId == 255u && voteBits == 0u);
 	vec4 light;
 	if (solid) {
 		light = vec4(0.0);                              // solid: blocks light

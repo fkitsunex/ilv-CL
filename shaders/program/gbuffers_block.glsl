@@ -1,6 +1,6 @@
 in_out vec2 texcoord;
 in_out vec2 lmcoord;
-in_out vec3 glcolor;
+in_out vec4 glcolor;
 in_out vec3 viewPos;
 #if FANCY_END_PORTAL_ENABLED > 0
 	flat in_out uint materialId;
@@ -20,6 +20,7 @@ in_out vec3 viewPos;
 
 #include "/utils/projections.glsl"
 #include "/lib/lighting/fsh_lighting.glsl"
+#include "/lib/translucent_overlay.glsl"
 
 void main() {
 	vec2 lmcoord = lmcoord;
@@ -62,7 +63,7 @@ void main() {
 	vec4 rawColor = texture2D(MAIN_TEXTURE, texcoord);
 	if (rawColor.a < 0.01) discard;
 	vec4 color = rawColor;
-	color.rgb *= glcolor;
+	color *= glcolor; // incl. vertex ALPHA: mod beams (Gadgets & Gizmos thrusters…) set their opacity there
 	color.rgb = color.rgb - (4.0 / 27.0) * color.rgb * color.rgb * color.rgb;
 	
 	float m = getLum(color.rgb);
@@ -155,12 +156,32 @@ void main() {
 	
 	// main lighting (skipped for nametags so they stay flat/unlit & fullbright, like vanilla)
 	float isAfterDeferred = texelFetch(colortex10, ivec2(0), 0).r;
+	float outSpecularness = specularness; // (specularness is a varying with PBR off: never assign to it)
 	if (isAfterDeferred > 0.5 && !isNametag) {
 		float _inSunlightAmount;
 		doFshLighting(color.rgb, _inSunlightAmount, lmcoord.x, lmcoord.y, specularness, 0.0, viewPos, normal, gl_FragCoord.z);
+		// translucent block entity drawn over the finished scene (separateEntityDraws): no reflection pass on it
+		reflectiveness = 0.0;
+		outSpecularness = 253.0 / 255.0;
 	}
 	
 	color.rgb *= 1.0 + 0.75 * step(0.9, lmcoord.x) * step(0.1, getSaturation(glcolor.rgb));
+	
+	// genuinely translucent geometry (vertex alpha < 1 — not textures with soft alpha like banner patterns)
+	// drawn before deferred: light it here and composite it later over the finished scene (see the lib)
+	#if COLORED_LIGHTING_ENABLED == 1
+		if (glcolor.a < 0.99 && isAfterDeferred < 0.5 && !isNametag) {
+			vec3 overlayColor = color.rgb;
+			// emissive beams (drawn with the FULL_BRIGHT lightmap, e.g. entityTranslucentEmissive) are shown
+			// unlit at full brightness like vanilla; anything else is lit normally
+			if (lmcoord.x < 0.99 || lmcoord.y < 0.99) {
+				float _overlaySun;
+				doFshLighting(overlayColor, _overlaySun, lmcoord.x, lmcoord.y, specularness, 0.0, viewPos, normal, gl_FragCoord.z);
+			}
+			storeTranslucentOverlay(vec4(overlayColor, color.a));
+			discard;
+		}
+	#endif
 	
 	
 	/* DRAWBUFFERS:02 */
@@ -171,7 +192,7 @@ void main() {
 	gl_FragData[0] = vec4(color);
 	gl_FragData[1] = vec4(
 		pack_2x8(lmcoord),
-		pack_2x8(reflectiveness, specularness),
+		pack_2x8(reflectiveness, outSpecularness),
 		encodedNormal
 	);
 	
@@ -205,9 +226,9 @@ void main() {
 	
 	
 	// process gl_Color (foliage tint, vanilla ao)
-	vec4 glcolor4 = gl_Color;
-	float ao = 1.0 - (1.0 - glcolor4.a) * mix(VANILLA_AO_DARK, VANILLA_AO_BRIGHT, max(lmcoord.x, lmcoord.y));
-	glcolor = glcolor4.rgb * ao;
+	// Block entities carry real opacity in the vertex alpha (not terrain-style packed AO): treating it as AO
+	// darkened translucent mod beams to near-black and left them opaque. Pass it through as alpha instead.
+	glcolor = gl_Color;
 	
 	
 	// block id stuff
