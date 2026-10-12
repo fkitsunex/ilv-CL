@@ -4,7 +4,7 @@
 
 It's based on **I Like Vanilla v1.4.0b**. Everything else (style, settings, look) is the original shader. All credit for it goes to What42Pizza and the people credited below.
 
-> **About the code:** every change in this fork was written by **Claude** (Anthropic's AI). The maintainer of this fork ([fkitsunex](https://github.com/Kukidoo)) designed, tested and directed the changes in-game, but **did not personally write a single line of code**.
+> **About the code:** every change in this fork was written by **Claude** (Anthropic's AI). The maintainer of this fork ([fkitsunex](https://github.com/fkitsunex)) designed, tested and directed the changes in-game, but **did not personally write a single line of code**.
 
 ### [⬇ Download the latest release](https://github.com/fkitsunex/ilv-CL/releases/latest)
 
@@ -105,7 +105,7 @@ See [changelog.md](changelog.md) for the full ILV-CL history.
 
 The original shader: [GitHub](https://github.com/What42Pizza/I-Like-Vanilla) · [Modrinth](https://modrinth.com/shader/i-like-vanilla) · [CurseForge](https://www.curseforge.com/minecraft/shaders/i-like-vanilla) · [Discord](https://discord.com/invite/h99ZBex9nZ)
 
-**Please report ILV-CL issues [here](https://github.com/Kukidoo/ilv-CL/issues), not to the original author.**
+**Please report ILV-CL issues [here](https://github.com/fkitsunex/ilv-CL/issues), not to the original author.**
 
 <br>
 
